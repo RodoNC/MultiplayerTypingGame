@@ -1,9 +1,0 @@
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\TypingBackend.exe
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\appsettings.Development.json
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\appsettings.json
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\TypingBackend.dll
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\TypingBackend.deps.json
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\TypingBackend.runtimeconfig.json
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\TypingBackend.pdb
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\Microsoft.AspNetCore.OpenApi.dll
-C:\Users\kidsc\Documents\Projects\HtmlAndJavaScriptProjects\TypingGamePrototyping\TypingBackend\bin\Release\net9.0\publish\Microsoft.OpenApi.dll
