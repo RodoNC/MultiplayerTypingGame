@@ -24,6 +24,7 @@ app.UseWebSockets(webSocketOptions);
 // ALLOW ESTABLISHING WEBSOCKET CONNECTION.
 app.Use(async (context, next) =>
 {
+    // THE PATH FOR CREATING A ROOM.
     if (context.Request.Path == "/createRoom")
     {
         if (context.WebSockets.IsWebSocketRequest)
@@ -51,6 +52,7 @@ app.Use(async (context, next) =>
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
         }
     }
+    // THE PATH FOR JOINING A ROOM.
     else if (context.Request.Path == "/joinRoom")
     {
         if (context.WebSockets.IsWebSocketRequest)
