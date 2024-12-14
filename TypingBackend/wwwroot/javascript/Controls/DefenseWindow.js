@@ -68,9 +68,6 @@ export class DefenseWindow extends HTMLElement
     // Opens the window.
     async Open(phrase)
     {
-        // FOCUS ON THE TEXTBOX.
-        this.#phraseTextbox.focus();
-
         // HANDLE THE USER TYPING.
         this.#phraseTextbox.addEventListener("input", () =>
         {
@@ -132,6 +129,9 @@ export class DefenseWindow extends HTMLElement
         {
             this.#startTypingTimer();
         });
+
+        // FOCUS ON THE TEXTBOX.
+        this.#phraseTextbox.focus();
         
         // CREATE A PROMISE TO BE RESOLVED WHEN THE TIME HAS ENDED
         // OR THE PHRASE WAS COMPLETED.

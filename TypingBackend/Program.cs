@@ -1,11 +1,6 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using System.Linq;
-using Microsoft.AspNetCore.SignalR;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 app.Urls.Add("http://*:8080");

@@ -97,14 +97,14 @@ export class AttackWindow extends HTMLElement
         // SHOW THE WINDOW.
         this.style.display = "block";
 
-        // FOCUS ON THE TEXTBOX.
-        this.#phraseTextbox.focus();
-
         // START THE GRACE PERIOD TIMER.
         this.#attackTimer.StartTimer(this.#gracePeriodInSeconds).then(() =>
-        {
-            this.#startTypingTimer();
-        });
+            {
+                this.#startTypingTimer();
+            });
+            
+        // FOCUS ON THE TEXTBOX.
+        this.#phraseTextbox.focus();
         
         // CREATE A PROMISE TO BE RESOLVED WHEN THE TIME HAS ENDED
         // OR A PHRASE WAS SUBMITTED.
