@@ -1,15 +1,7 @@
-getImports = async () =>
-{
-    const { AttackWindow } = await import("./Controls/AttackWindow.js");
-    const { DefenseWindow } = await import("./Controls/DefenseWindow.js");
-}
-
 let socket = null;
 // ON LOAD FUNCTION.    
 onload = async () =>
 {
-    await getImports();
-
     // HANDLE THE USER CREATING A ROOM.
     const createRoomButton =  document.getElementById("CreateRoomButton");
     createRoomButton.addEventListener("click", () =>
@@ -24,8 +16,7 @@ onload = async () =>
         {
             console.log(reason)
             // GO BACK TO THE MAIN MENU.
-            const attackWindow = document.getElementById("AttackWindow").Close();
-            const defenseWindow = document.getElementById("DefenseWindow").Close();
+            document.getElementById("GameWindow").Close;
             const mainMenu = document.getElementById("MainMenu");
             mainMenu.style.display = "flex";
         });
@@ -48,8 +39,7 @@ onload = async () =>
             {
                 console.log(reason)
                 // GO BACK TO THE MAIN MENU.
-                const attackWindow = document.getElementById("AttackWindow").Close();
-                const defenseWindow = document.getElementById("DefenseWindow").Close();
+                document.getElementById("GameWindow").Close;
                 const mainMenu = document.getElementById("MainMenu");
                 mainMenu.style.display = "flex";
             });
@@ -62,15 +52,14 @@ startGame = async (socket) =>
     // HIDE THE MAIN MENU.
     const mainMenu = document.getElementById("MainMenu");
     mainMenu.style.display = "none";
-
+    
     // HANDLE THE SOCKET DISCONNECTING.
     let gameEndPromiseResolver;
     socket.onclose = () => { gameEndPromiseResolver("The connection was closed by the server."); };
     socket.onerror = () => { gameEndPromiseResolver("The connection was closed due to a connection error."); };
-
+    
     // HANDLE MESSAGES FROM THE WEBSOCKET CONNECTION.
-    const attackWindow = document.getElementById("AttackWindow");
-    const defenseWindow = document.getElementById("DefenseWindow");
+    const gameWindow = document.getElementById("GameWindow");
     socket.onmessage = (event) =>
     {
         const message = JSON.parse(event.data);
@@ -91,38 +80,30 @@ startGame = async (socket) =>
                 const roomKeySpan = document.getElementById("RoomKeySpan");
                 roomKeySpan.style.display = "none";
 
-                // Reset the health.
-                const healthSpan = document.getElementById("HealthSpan");
-                healthSpan.innerText = 100;
+                // SHOW THE GAME.
+                gameWindow.Open()
 
                 break;
             }
             case "attack":
             {
-                attackWindow.Open().then((res) =>
+                gameWindow.Attack().then((response) =>
                 {
-                    attackWindow.Close();
-                    socket.send(JSON.stringify(res));
+                    socket.send(JSON.stringify(response));
                 });
                 break;
             }
             case "defend":
             {
-                defenseWindow.Open(message.phrase).then((res) =>
+                gameWindow.Defend(message.phrase).then((response) =>
                 {
-                    defenseWindow.Close();
-                    socket.send(JSON.stringify(res));
+                    socket.send(JSON.stringify(response));
                 });
                 break;
             }
             case "result":
             {
-                // Update the health.
-                const healthSpan = document.getElementById("HealthSpan");
-                healthSpan.innerText = message.health;
-
-                // Display the message.
-                console.log(message.resultMessage);
+                gameWindow.ShowResult(message);                
                 break;
             }
             default:

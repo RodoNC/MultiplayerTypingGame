@@ -1,6 +1,6 @@
 import { GameTimer } from "./GameTimer.js";
 
-export class AttackWindow extends HTMLElement
+export class AttackControl extends HTMLElement
 {
     // ELEMENTS.
     #phraseTextbox = null;
@@ -91,10 +91,10 @@ export class AttackWindow extends HTMLElement
     }
     
     // PUBLIC FUNCTIONS.
-    // Opens the window.
+    // Opens the control.
     async Open()
     {
-        // SHOW THE WINDOW.
+        // SHOW THE CONTROL.
         this.style.display = "block";
 
         // START THE GRACE PERIOD TIMER.
@@ -115,17 +115,17 @@ export class AttackWindow extends HTMLElement
         return attackPromise;
     }
 
-    // Closes the window.
-    Close()
+    // Closes the control.
+    #close()
     {
-        // RESET THE WINDOW.
+        // RESET THE CONTROL.
         this.#gracePeriodInSeconds = 5;
         this.#timeToTypePhraseInSeconds = 10;
         this.#typingStartDateTime = null;
         this.#attackPromiseResolver = null;
         this.#phraseTextbox.value = "";
         
-        // HIDE THE WINDOW.
+        // HIDE THE CONTROL.
         this.style.display = "none";
     }
     
@@ -149,8 +149,9 @@ export class AttackWindow extends HTMLElement
                         phrase: this.#phraseTextbox.value.trim(),
                         time: typeTimeInSeconds
                     });
+                this.#close();
             });
         }
     }
 }
-customElements.define("attack-window", AttackWindow);
+customElements.define("attack-control", AttackControl);

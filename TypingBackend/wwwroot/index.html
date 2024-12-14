@@ -13,12 +13,11 @@
         <button id="CreateRoomButton" style="width: 50%;">Create Room</button>
         <span>Enter room key: <input id="JoinRoomTextbox" type="text"></input></span>
     </div>
-    <span id="RoomKeySpan" style="user-select: none; display: none;">room key: <span style="user-select: all;" id="RoomKeyValueSpan"></span></span><br/>
-    <span style="font-size: 20px;">Health: <span id="HealthSpan" style="color: red;">100</span></span>
-    <attack-window id="AttackWindow" style="left: 50%; top: 50%; position: absolute; display: none;"></attack-window>
-    <defense-window id="DefenseWindow" style="left: 50%; top: 50%; position: absolute; display: none;"></defense-window>
+    <span id="RoomKeySpan" style="user-select: none; display: none;">room key: <span style="user-select: all;" id="RoomKeyValueSpan"></span></span>
+    <game-window id="GameWindow" style="height: 100%; width: 100%; position: absolute; display: none;"/>
 </body>
 
+<script type="module" src="javascript/Controls/GameWindow.js"></script>
 <script type="text/javascript" src="javascript/TypingFightingGameV1.js"></script>
 
 </html>

@@ -1,6 +1,6 @@
 import { GameTimer } from "./GameTimer.js";
 
-export class DefenseWindow extends HTMLElement
+export class DefenseControl extends HTMLElement
 {
     // ELEMENTS.
     #phraseDisplaySpan = null;
@@ -65,7 +65,7 @@ export class DefenseWindow extends HTMLElement
     }
 
     // PUBLIC FUNCTIONS.
-    // Opens the window.
+    // Opens the control.
     async Open(phrase)
     {
         // HANDLE THE USER TYPING.
@@ -121,7 +121,7 @@ export class DefenseWindow extends HTMLElement
         this.#currentChunk = this.#phraseDisplaySpan.children[0];
         this.#currentChunk.style.textDecoration = "underline";
 
-        // SHOW THE WINDOW.
+        // SHOW THE CONTROL.
         this.style.display = "block";
 
         // START THE GRACE PERIOD TIMER.
@@ -142,10 +142,10 @@ export class DefenseWindow extends HTMLElement
         return defensePromise;
     }
 
-    // Closes the window.
-    Close()
+    // Closes the control.
+    #close()
     {
-        // RESET THE WINDOW.
+        // RESET THE CONTROL.
         this.#gracePeriodInSeconds = 5;
         this.#timeToTypePhraseInSeconds = 10;
         this.#typingStartDateTime = null;
@@ -154,7 +154,7 @@ export class DefenseWindow extends HTMLElement
         this.#currentChunk = null;
         this.#phraseDisplaySpan.innerHTML = "";
 
-        // HIDE THE WINDOW.
+        // HIDE THE CONTROL.
         this.style.display = "none";
     }
 
@@ -173,8 +173,9 @@ export class DefenseWindow extends HTMLElement
                 const typingEndDateTime = new Date();
                 const typeTimeInSeconds = (typingEndDateTime - this.#typingStartDateTime) / 1000;
                 this.#defensePromiseResolver({ time: typeTimeInSeconds });
+                this.#close();
             });
         }
     }
 }
-customElements.define("defense-window", DefenseWindow);
+customElements.define("defense-control", DefenseControl);
