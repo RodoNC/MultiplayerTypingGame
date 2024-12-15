@@ -16,7 +16,7 @@ onload = async () =>
         {
             console.log(reason)
             // GO BACK TO THE MAIN MENU.
-            document.getElementById("GameWindow").Close;
+            document.getElementById("GameWindow").Close();
             const mainMenu = document.getElementById("MainMenu");
             mainMenu.style.display = "flex";
         });
@@ -39,7 +39,7 @@ onload = async () =>
             {
                 console.log(reason)
                 // GO BACK TO THE MAIN MENU.
-                document.getElementById("GameWindow").Close;
+                document.getElementById("GameWindow").Close();
                 const mainMenu = document.getElementById("MainMenu");
                 mainMenu.style.display = "flex";
             });
@@ -85,7 +85,7 @@ startGame = async (socket) =>
 
                 break;
             }
-            case "attack":
+            case "promptAttack":
             {
                 gameWindow.Attack().then((response) =>
                 {
@@ -93,7 +93,7 @@ startGame = async (socket) =>
                 });
                 break;
             }
-            case "defend":
+            case "promptDefense":
             {
                 gameWindow.Defend(message.phrase).then((response) =>
                 {
@@ -106,9 +106,20 @@ startGame = async (socket) =>
                 gameWindow.ShowResult(message);                
                 break;
             }
+            case "opponentDisconnected":
+            {
+                gameWindow.Close();
+                break;
+            }
+            case "ping":
+            {
+                break;
+            }
             default:
+            {
                 gameEndPromiseResolver("Game ended due to unknown reason.");
                 break;
+            }
         }
     }
 

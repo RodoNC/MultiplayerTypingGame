@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 app.Urls.Add("http://*:8080");
@@ -33,14 +34,11 @@ app.Use(async (context, next) =>
                 return;
             }
 
-            // Keep the connection alive until the game ends.
-            while (!room.GameCancellationToken.IsCancellationRequested)
+            // Keep the connection alive until the room closes.
+            while (!room.RoomCancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(100);
+                Thread.Sleep(TimeSpan.FromSeconds(500));
             }
-
-            // Remove the room.
-            roomsByKey.Remove(room.RoomKey);
         }
         else
         {
@@ -67,18 +65,12 @@ app.Use(async (context, next) =>
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 return;
             }
-            // Start the game.
-            try
-            {
-                await room.Run();
-            }
-            catch(Exception e)
-            {
 
+            // Keep the connection alive until the room closes.
+            while (!room.RoomCancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(100);
             }
-
-            // Remove the room.
-            roomsByKey.Remove(room.RoomKey);
         }
         else
         {
@@ -112,14 +104,14 @@ Room? JoinRoom(WebSocket webSocket, String roomKey)
     }
 
     // Check if the room is full.
-    bool roomIsFull = room.AwayPlayer != null;
+    bool roomIsFull = room.Players.Count == 2;
     if (roomIsFull)
     {
         return null;
     }
 
     // Add the player to the room.
-    room.AwayPlayer = player;
+    room.Players.Add(player);
 
     return room;
 }
@@ -140,13 +132,13 @@ Room? CreateRoom(WebSocket webSocket)
     Room room = new Room(player, roomKey);
 
     // Add the room to the list of rooms.
-    roomsByKey.Add(room.RoomKey, room);
+    roomsByKey.Add(room.Name, room);
 
     // Show the user the room key.
      var createdMessage = new Message
     {
-        type = "created",
-        roomKey = room.RoomKey
+        type = Message.Type.created,
+        roomKey = room.Name
     };
     var createdMessageJson = JsonSerializer.Serialize(createdMessage);
     webSocket.SendAsync(
@@ -155,104 +147,164 @@ Room? CreateRoom(WebSocket webSocket)
         true,
         CancellationToken.None);
 
+    // Run the room until there are no players.
+    room.RunRoom().ContinueWith((task) =>
+    {
+        Console.WriteLine($"Room: {room.Name} removed");
+        roomsByKey.Remove(room.Name);
+    });
+
     return room;
 }
 
+/// <summary>
+/// A room.
+/// </summary>
 class Room
 {
-    // PUBLIC MEMBERS.
-    public string RoomKey { get; private set;}
-    public Player HomePlayer { get; private set; }
-    public Player? AwayPlayer { get; set; } = null;
-    public CancellationToken GameCancellationToken { get; private set; }
+    #region Public Members
+    /// <summary>The room name.</summary>
+    public string Name { get; private set;} = string.Empty;
 
-    // PRIVATE MEMBERS.
-    private CancellationTokenSource gameCancellationTokenSource = new();
+    /// <summary>The players in the room.</summary>
+    public List<Player> Players { get; private set; } = new List<Player>();
+    
+    /// <summary>The cancellation token to close the room.</summary>
+    public CancellationToken RoomCancellationToken { get; private set; }
+    #endregion
 
-    // PUBLIC FUNCTIONS.
-    // Constructor.
-    public Room(Player player, string roomKey)
+    #region Private Members
+    /// <summary>The cancellation token source to close the room.</summary>
+    private CancellationTokenSource roomCancellationTokenSource = new CancellationTokenSource();
+    /// <summary>The attacking player.</summary>
+    private Player attackingPlayer;
+    /// <summary>The defending player.</summary>
+    private Player defendingPlayer;
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// The constructor.
+    /// </summary>
+    /// <param name="player">The player who created the room.</param>
+    /// <param name="name">The room name.</param>
+    public Room(Player player, string name)
     {
-        RoomKey = roomKey;
-        HomePlayer = player;
-        GameCancellationToken = gameCancellationTokenSource.Token;        
+        Name = name;
+        Players.Add(player);
+        RoomCancellationToken = roomCancellationTokenSource.Token;        
     }
 
-    public async Task Run()
+    public async Task RunRoom()
     {
-        // Choose which player attacks first.
-        // TODO.
-        Player attackingPlayer = this.HomePlayer;
-        Player defendingPlayer = this.AwayPlayer;
-
-        // Prompt the players that the game is starting.
-        var startMessage = new Message
-        {
-            type = "start",
-            roomKey = RoomKey
-        };
-
-        var startMessageJson = JsonSerializer.Serialize(startMessage);
-        await attackingPlayer.WebSocketConnection.SendAsync(
-            new ArraySegment<byte>(Encoding.ASCII.GetBytes(startMessageJson)),
-            WebSocketMessageType.Text,
-            true,
-            CancellationToken.None);
-        await defendingPlayer.WebSocketConnection.SendAsync(
-            new ArraySegment<byte>(Encoding.ASCII.GetBytes(startMessageJson)),
-            WebSocketMessageType.Text,
-            true,
-            CancellationToken.None);
-
-        // Start the game loop.
         while (true)
         {
-            // Prompt attacking player.
-            var attackMessage = new Message
+            // WAIT FOR THERE TO BE ENOUGH PLAYERS.
+            bool enoughPlayers = Players.Count == 2;
+            while(!enoughPlayers)
+            {
+                // Close the room if no players remain.
+                updatePlayerList();
+                if (!Players.Any())
                 {
-                    type = "attack",
-                };
-            var attackMessageJson = JsonSerializer.Serialize(attackMessage);
-            await attackingPlayer.WebSocketConnection.SendAsync(
-                new ArraySegment<byte>(Encoding.ASCII.GetBytes(attackMessageJson)),
-                WebSocketMessageType.Text,
-                true,
-                CancellationToken.None);
+                    roomCancellationTokenSource.Cancel();
+                    return;
+                }
 
-            // Get phrase and time from user.
-            var buffer = new byte[1024 * 4];
-            var receiveResult = await attackingPlayer.WebSocketConnection.ReceiveAsync(
-                new ArraySegment<byte>(buffer), CancellationToken.None);
-            var attackResponse = JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
+                // Keep wating for new players.
+                Thread.Sleep(500);
+                enoughPlayers = Players.Count == 2;
+            }
+
+            // START THE GAME.
+            await startGame();
+        }
+    }
+    #endregion
+
+    #region Private Methods
+    /// <summary>
+    /// Starts the game.
+    /// </summary>
+    /// <returns>A task the completes once the game ends.</returns>
+    private async Task startGame()
+    {       
+        // CHOOSE WHICH PLAYER ATTACKS FIRST.
+        // TODO.
+        this.attackingPlayer = Players[0];
+        this.defendingPlayer = Players[1];
+
+        // PROMPT THE PLAYERS THAT THE GAME IS STARTING.
+        Message startMessage = new Message
+        {
+            type = Message.Type.start,
+            roomKey = Name
+        };
+        await sendMessage(startMessage);
+
+        // START THE GAME LOOP.
+        while (true)
+        {
+            // PROMPT ATTACKING PLAYER.
+            Message attackMessage = new Message
+                {
+                    type = Message.Type.promptAttack,
+                };
+            bool promptToAttackSent = await sendMessage(attackMessage, this.attackingPlayer);
+            if (!promptToAttackSent)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.attackingPlayer);
+                break;
+            }
+
+            // GET PHRASE AND TIME FROM USER.
+            Message? attackResponse = await getMessage(this.attackingPlayer, 20);
+            bool attackResponseRetrieved = attackResponse != null;
+            if (!attackResponseRetrieved)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.attackingPlayer);
+                break;
+            }
 
             // Check if the phrase is valid.
             if (!phraseIsValid(attackResponse?.phrase))
             {
-                // Switch the attackers turn.
-                attackingPlayer = defendingPlayer;
-                defendingPlayer = defendingPlayer == this.HomePlayer ? this.AwayPlayer : this.HomePlayer;
+                // Skip the attackers turn.
+                this.swapPlayers();
                 continue;
             }
 
-            // Prompt the defending player.
+            // PROMPT THE DEFENDING PLAYER.
             var defenseMessage = new Message
             {
-                type = "defend",
+                type = Message.Type.promptDefense,
                 phrase = attackResponse?.phrase,
             };
-            var defenseMessageJson = JsonSerializer.Serialize(defenseMessage);
-            await defendingPlayer.WebSocketConnection.SendAsync(
-                new ArraySegment<byte>(Encoding.ASCII.GetBytes(defenseMessageJson)),
-                WebSocketMessageType.Text,
-                true,
-                CancellationToken.None);
+            bool promptToDefendSent = await sendMessage(defenseMessage, this.defendingPlayer);
+            if (!promptToDefendSent)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.defendingPlayer);
+                break;
+            }
             
-            // Get the time to type the phrase.
-            receiveResult = await defendingPlayer.WebSocketConnection.ReceiveAsync(
-                new ArraySegment<byte>(buffer), CancellationToken.None);
-            var defenseResponse = JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
+            // GET THE TIME TO TYPE THE PHRASE.
+            Message? defenseResponse = await getMessage(this.defendingPlayer, 20);
+            bool defenseResponseRetrieved = defenseResponse != null;
+            if (!defenseResponseRetrieved)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.defendingPlayer);
+                break;
+            }
             
-            // Calculate the damage.
+            // CALCULATE THE DAMAGE.
             double timeDifferenceInSeconds = (defenseResponse.time ?? 0) - (attackResponse.time ?? 0);
             double damageMultiplier = timeDifferenceInSeconds / (attackResponse.time ?? double.MaxValue);
             bool attackLanded = damageMultiplier > .2;
@@ -260,59 +312,116 @@ class Room
             if (attackLanded)
             {
                 // Apply the damage to the defender.
-                defendingPlayer.Health -= (int)Math.Floor(15 * damageMultiplier);
+                this.defendingPlayer.Health -= (int)Math.Floor(15 * damageMultiplier);
             }
             else if (attackCountered)
             {
                 // Apply the damage to the attacker.
-                attackingPlayer.Health += (int)Math.Floor(10 * damageMultiplier);
+                this.attackingPlayer.Health += (int)Math.Floor(10 * damageMultiplier);
             }
             else
             {
                 // Attack was dodged.
             }
 
-            // Send the results to the players.
+            // SEND THE RESULTS TO THE PLAYERS.
+            // Send the results to the attacker.
             var attackerResultMessage = new Message
             {
-                type = "result",
+                type = Message.Type.result,
                 health = attackingPlayer.Health,
                 resultMessage = $"Attacker time: {attackResponse?.time} Defense time: {defenseResponse?.time} Attack landed: {attackLanded}"
             };
+            bool attackResultSent = await sendMessage(attackerResultMessage, this.attackingPlayer);
+            if (!attackResultSent)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.attackingPlayer);
+                break;
+            }
+
+            // Send the results to the defender.
             var defenderResultMessage = new Message
             {
-                type = "result",
+                type = Message.Type.result,
                 health = defendingPlayer.Health,
                 resultMessage = $"Attacker time: {attackResponse?.time} Defense time: {defenseResponse?.time} Damage: {damageMultiplier}"
             };
-            var attackerResultMessageJson = JsonSerializer.Serialize(attackerResultMessage);
-            await attackingPlayer.WebSocketConnection.SendAsync(
-                new ArraySegment<byte>(Encoding.ASCII.GetBytes(attackerResultMessageJson)),
-                WebSocketMessageType.Text,
-                true,
-                CancellationToken.None);
-            var defenderResultMessageJson = JsonSerializer.Serialize(defenderResultMessage);
-            await defendingPlayer.WebSocketConnection.SendAsync(
-                new ArraySegment<byte>(Encoding.ASCII.GetBytes(defenderResultMessageJson)),
-                WebSocketMessageType.Text,
-                true,
-                CancellationToken.None);
+            bool defenseResultSent = await sendMessage(defenderResultMessage, this.defendingPlayer);
+            if (!defenseResultSent)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.defendingPlayer);
+                break;
+            }
             
-            // Switch the players.
-            attackingPlayer = defendingPlayer;
-            defendingPlayer = defendingPlayer == this.HomePlayer ? this.AwayPlayer : this.HomePlayer;
-            
-            // Check if any of the players lost.
+            // Add a small delay to let the players see the results.
+            //Thread.Sleep(TimeSpan.FromSeconds(5));
+
+            // END THE GAME IF ANY OF THE PLAYERS LOST.
             bool playerLost = defendingPlayer.Health <= 0 || attackingPlayer.Health <= 0;
             if (playerLost)
             {
-                gameCancellationTokenSource.Cancel();
                 break;
             }
+
+            // SWAP THE PLAYERS.
+            this.swapPlayers();
         }
+        
+        // CHECK IF THE GAME ENDING WAS DUE TO A PLAYER DISCONNECTING.
+        bool playerDisconnected = Players.Count != 2;
+        if (playerDisconnected)
+        {
+            // Let the remaining connected player know that the other player disconnected.
+            Message playerDisconnectedMessage = new Message
+            {
+                type = Message.Type.opponentDisconnected
+            };
+            await sendMessage(playerDisconnectedMessage, Players[0]);
+        }
+
+        // RESET THE HEALTH OF THE PLAYERS.
+        Players.ForEach(player => player.Health = 100);
     }
 
-    // PRIVATE FUNCITONS.
+    /// <summary>
+    /// Removes any players that have disconnected.
+    /// </summary>
+    private async Task updatePlayerList()
+    {
+        Players.ForEach(async (player) =>
+        {
+            // Remove the player if we cannot ping them.
+            Message pingMessage = new Message
+            {
+                type = Message.Type.ping
+            };
+            bool pingSuccessful = await sendMessage(pingMessage, player);
+            if (!pingSuccessful)
+            {
+                Players.Remove(player);
+            }
+        });
+    }
+
+    /// <summary>
+    /// Swaps the attacking and defending players,
+    /// </summary>
+    private void swapPlayers()
+    {
+        Player previousAttackingPlayer = attackingPlayer;
+        attackingPlayer = defendingPlayer;
+        defendingPlayer = previousAttackingPlayer;
+    }
+
+    /// <summary>
+    /// Checks if the provided phrase is valid.
+    /// </summary>
+    /// <param name="phrase">The phrase to check.</param>
+    /// <returns>True if the phrase is valid; false otherwise.</returns>
     private bool phraseIsValid(string phrase)
     {
         // Check if there is a message.
@@ -325,36 +434,117 @@ class Room
         return true;
     }
 
-    private async Task<Message?> getPlayerMessage(Player player)
+    /// <summary>
+    /// Recieves a message from the specified player.
+    /// </summary>
+    /// <param name="player">The player to send the message to.</param>
+    /// <param name="timeoutInSeconds">The time to wait to receive the message, 300 seconds by default.</param>
+    /// <returns>The message from the player; null otherwise.</returns>
+    private async Task<Message?> getMessage(Player player, uint timeoutInSeconds = 300)
     {
-        // Receive the message from the socket.
-        var buffer = new byte[1024 * 4];
-        var receiveResult = await player.WebSocketConnection.ReceiveAsync(
-            new ArraySegment<byte>(buffer), CancellationToken.None);
-        
-        // Check if the message was a request to close.
-        bool closeMessageReceived = receiveResult.CloseStatus.HasValue;
-        if (closeMessageReceived)
+        try
         {
-            await player.WebSocketConnection.CloseAsync(
-                receiveResult.CloseStatus.Value,
-                receiveResult.CloseStatusDescription,
-                CancellationToken.None);
-
-            return new Message
+            // Receive the message from the socket.
+            var buffer = new byte[1024 * 4];
+            var receiveResult = await player.WebSocketConnection.ReceiveAsync(
+                new ArraySegment<byte>(buffer), CancellationToken.None);
+            
+            // Check if the message was a request to close.
+            bool closeMessageReceived = receiveResult.CloseStatus.HasValue;
+            if (closeMessageReceived)
             {
-                type = "close"
-            };
+                await player.WebSocketConnection.CloseAsync(
+                    receiveResult.CloseStatus.Value,
+                    receiveResult.CloseStatusDescription,
+                    CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(timeoutInSeconds));
+
+                return null;
+            }
+
+            // Return the message.
+            return JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine(e);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Sends a message to both players, or a specific player if specified.
+    /// </summary>
+    /// <param name="message">The message to send.</param>
+    /// <param name="player">The player to send the message to.</param>
+    /// <returns>True if the message was sent; false otherwise.</returns>
+    private async Task<bool> sendMessage(Message message, Player? player = null)
+    {
+        try
+        {
+            // Serialize the message.
+            var messageJson = JsonSerializer.Serialize(message);
+
+            // Check if a player was was specified.
+            bool playerWasSpecified = player != null;
+            if (playerWasSpecified)
+            {
+                // Send to the specific player.
+                await player.WebSocketConnection.SendAsync(
+                    new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
+            }
+            else
+            {
+                // Send to both players.
+                await this.attackingPlayer.WebSocketConnection.SendAsync(
+                    new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
+                await this.defendingPlayer.WebSocketConnection.SendAsync(
+                    new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
+            }
+
+            // Return that the message was sent successfully.
+            return true;
+        }
+        catch(Exception e)
+        {
+            Console.Error.WriteLine(e);
+            return false;
         }
 
-        // Return the message.
-        return JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
     }
+    #endregion
 }
 
+/// <summary>
+/// A message sent between the client and server.
+/// </summary>
 class Message
 {
-    public string? type { get; set; }
+    #region Inner Types
+    public enum Type
+    {
+        ping,
+        created,
+        start,
+        opponentDisconnected,
+        promptAttack,
+        attackResponse,
+        promptDefense,
+        defenseResponse,
+        result
+    }
+    #endregion
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Type? type { get; set; }
     public string? phrase { get; set; }
     public double? time { get; set; }
     public int health { get; set; }
@@ -362,6 +552,9 @@ class Message
     public string? roomKey { get; set; }
 }
 
+/// <summary>
+/// A player in the game.
+/// </summary>
 class Player
 {
     public WebSocket? WebSocketConnection { get; set; } = null;

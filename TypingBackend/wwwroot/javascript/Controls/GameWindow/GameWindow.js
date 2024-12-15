@@ -55,9 +55,6 @@ export class GameWindow extends HTMLElement
             }
         `;
         shadowRoot.appendChild(style);
-
-        
-       
     }
     
     // PUBLIC FUNCTIONS.
