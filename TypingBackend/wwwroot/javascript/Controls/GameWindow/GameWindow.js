@@ -25,6 +25,7 @@ export class GameWindow extends HTMLElement
 <div id="Display">
     <span style="font-size: 20px;">Health: <span id="HealthSpan" style="color: red;">100</span></span>
 </div>
+<img id="Monkey" src="monkey.gif"/>
 <div id="Controls">
     <attack-control id="AttackControl" style="display: none;"></attack-control>
     <defense-control id="DefenseControl" style="display: none;"></defense-control>
@@ -44,6 +45,13 @@ export class GameWindow extends HTMLElement
             #Display
             {
                 height: 50%; 
+            }
+
+            #Monkey
+            {
+                height: 60%;
+                width: 30%;
+                margin: auto;
             }
 
             #Controls
