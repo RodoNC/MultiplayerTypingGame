@@ -11,6 +11,7 @@ export class AttackControl extends HTMLElement
     #timeToTypePhraseInSeconds = 10;
     #typingStartDateTime = null;
     #attackPromiseResolver = null;
+    #socket = null;
     
     // CONSTRUCTOR.
     constructor()
@@ -68,7 +69,6 @@ export class AttackControl extends HTMLElement
 
         // HANDLE THE USER SUBMITTING THE PHRASE.
         this.#phraseTextbox.addEventListener("keydown", (event) =>
-        // HANDLE THE USER SUBMITTING THE PHRASE.
         {
             if (event.key === "Enter")
             {
@@ -88,12 +88,25 @@ export class AttackControl extends HTMLElement
                 event.preventDefault();
             }
         });
+        
+        // SEND THE PENDING MESSAGE TO THE BACKEND.
+        this.#phraseTextbox.addEventListener("change", (event) =>
+        {
+            this.#socket.send(JSON.stringify(
+            {
+                type: "pendingPhrase",
+                phrase: this.#phraseTextbox.value.trim()
+            }));
+        });
     }
     
     // PUBLIC FUNCTIONS.
     // Opens the control.
-    async Open()
+    async Open(socket)
     {
+        // SET THE SOCKET.
+        this.#socket = socket;
+
         // SHOW THE CONTROL.
         this.style.display = "block";
 

@@ -66,7 +66,21 @@ export class DefenseControl extends HTMLElement
 
     // PUBLIC FUNCTIONS.
     // Opens the control.
-    async Open(phrase)
+    Open()
+    {
+        // SHOW THE CONTROL.
+        this.style.display = "block";
+    }
+
+    // Display the pending phrase.
+    DisplayPendingPhrase(phrase)
+    {
+        this.#phraseTextbox.disabled = true;
+        this.#phraseDisplaySpan.innerText = `Attacker is typing: ${phrase}`;
+    }
+
+    // Allow the user to defend.
+    async Defend(phrase)
     {
         // HANDLE THE USER TYPING.
         this.#phraseTextbox.addEventListener("input", () =>
@@ -103,6 +117,7 @@ export class DefenseControl extends HTMLElement
         });
 
         // ADD THE WORDS TO THE TYPE DISPLAY.
+        this.#phraseDisplaySpan.innerHTML = "";
         const phraseChunks = phrase.split(" ");
         phraseChunks.forEach((chunk, index) =>
         {
@@ -121,9 +136,6 @@ export class DefenseControl extends HTMLElement
         this.#currentChunk = this.#phraseDisplaySpan.children[0];
         this.#currentChunk.style.textDecoration = "underline";
 
-        // SHOW THE CONTROL.
-        this.style.display = "block";
-
         // START THE GRACE PERIOD TIMER.
         this.#defenseTimer.StartTimer(this.#gracePeriodInSeconds).then(() =>
         {
@@ -131,6 +143,7 @@ export class DefenseControl extends HTMLElement
         });
 
         // FOCUS ON THE TEXTBOX.
+        this.#phraseTextbox.disabled = false;
         this.#phraseTextbox.focus();
         
         // CREATE A PROMISE TO BE RESOLVED WHEN THE TIME HAS ENDED

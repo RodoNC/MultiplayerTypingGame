@@ -204,7 +204,7 @@ class Room
             while(!enoughPlayers)
             {
                 // Close the room if no players remain.
-                updatePlayerList();
+                //updatePlayerList();
                 if (!Players.Any())
                 {
                     roomCancellationTokenSource.Cancel();
@@ -259,8 +259,48 @@ class Room
                 break;
             }
 
-            // GET PHRASE AND TIME FROM USER.
-            Message? attackResponse = await getMessage(this.attackingPlayer, 20);
+            // GET PENDING PHRASE TO DISPLAY TO THE DEFENDER.
+            Message? pendingPhrase = await getMessage(this.attackingPlayer, 20);
+            bool pendingPhraseRetrieved = pendingPhrase != null;
+            if (!pendingPhraseRetrieved)
+            {
+                // Either an error has occured, or the user has disconnected.
+                // Remove the player from the room and end the game.
+                Players.Remove(this.attackingPlayer);
+                break;
+            }
+            while (pendingPhrase.type == Message.Type.pendingPhrase)
+            {
+                // Send the pending message to the defender.
+                var pendingPhraseMessage = new Message
+                {
+                    type = Message.Type.pendingPhrase,
+                    phrase = pendingPhrase?.phrase,
+                };
+                //bool pendingPhraseSent = await 
+                sendMessage(pendingPhraseMessage, this.defendingPlayer);
+                /* if (!pendingPhraseSent)
+                {
+                    // Either an error has occured, or the user has disconnected.
+                    // Remove the player from the room and end the game.
+                    Players.Remove(this.defendingPlayer);
+                    break;
+                } */
+
+                // Get the pending message from the attacker.
+                pendingPhrase = await getMessage(this.attackingPlayer, 20);
+                pendingPhraseRetrieved = pendingPhrase != null;
+                if (!pendingPhraseRetrieved)
+                {
+                    // Either an error has occured, or the user has disconnected.
+                    // Remove the player from the room and end the game.
+                    Players.Remove(this.attackingPlayer);
+                    break;
+                }
+            }
+
+            // GET COMPLETE PHRASE AND TIME FROM USER.
+            Message attackResponse = pendingPhrase;
             bool attackResponseRetrieved = attackResponse != null;
             if (!attackResponseRetrieved)
             {
@@ -462,7 +502,9 @@ class Room
             }
 
             // Return the message.
-            return JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
+            Message message = JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
+            Console.WriteLine(message);
+            return message;
         }
         catch (Exception e)
         {
@@ -509,7 +551,8 @@ class Room
                     true,
                     CancellationToken.None);
             }
-
+    
+            Console.WriteLine($"Sent: {messageJson}");
             // Return that the message was sent successfully.
             return true;
         }
@@ -536,6 +579,7 @@ class Message
         start,
         opponentDisconnected,
         promptAttack,
+        pendingPhrase,
         attackResponse,
         promptDefense,
         defenseResponse,

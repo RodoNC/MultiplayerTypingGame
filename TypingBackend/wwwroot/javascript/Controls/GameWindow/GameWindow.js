@@ -81,15 +81,22 @@ export class GameWindow extends HTMLElement
     }
 
     // Allow the user to attack.
-    async Attack()
+    async Attack(socket)
     {
-        return await this.#attackControl.Open()
+        return await this.#attackControl.Open(socket);
     }
     
+    // Display the pending phrase to the defender.
+    DisplayPendingPhrase(phrase)
+    {
+        this.#defenseControl.Open();
+        this.#defenseControl.DisplayPendingPhrase(phrase);
+    }
+
     // Allow the user to defend.
     async Defend(phrase)
     {
-        return await this.#defenseControl.Open(phrase)
+        return await this.#defenseControl.Defend(phrase);
     }
 
     ShowResult(result)

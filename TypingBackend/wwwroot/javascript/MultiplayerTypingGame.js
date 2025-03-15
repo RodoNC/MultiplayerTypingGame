@@ -87,11 +87,16 @@ startGame = async (socket) =>
             }
             case "promptAttack":
             {
-                gameWindow.Attack().then((response) =>
+                gameWindow.Attack(socket).then((response) =>
                 {
                     socket.send(JSON.stringify(response));
                 });
                 break;
+            }
+            case "pendingPhrase":
+            {
+                gameWindow.DisplayPendingPhrase(message.phrase);
+                break;  
             }
             case "promptDefense":
             {
