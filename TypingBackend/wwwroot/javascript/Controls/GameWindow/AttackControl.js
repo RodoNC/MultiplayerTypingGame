@@ -90,7 +90,7 @@ export class AttackControl extends HTMLElement
         });
         
         // SEND THE PENDING MESSAGE TO THE BACKEND.
-        this.#phraseTextbox.addEventListener("change", (event) =>
+        this.#phraseTextbox.addEventListener("keyup", (event) =>
         {
             this.#socket.send(JSON.stringify(
             {

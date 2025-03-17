@@ -127,8 +127,7 @@ Room? CreateRoom(WebSocket webSocket)
     };
 
     // Create a room.
-    string 
-    roomKey = Guid.NewGuid().ToString();
+    string roomKey = Guid.NewGuid().ToString().Substring(0, 4);
     Room room = new Room(player, roomKey);
 
     // Add the room to the list of rooms.
@@ -277,15 +276,14 @@ class Room
                     type = Message.Type.pendingPhrase,
                     phrase = pendingPhrase?.phrase,
                 };
-                //bool pendingPhraseSent = await 
-                sendMessage(pendingPhraseMessage, this.defendingPlayer);
-                /* if (!pendingPhraseSent)
+                bool pendingPhraseSent = await sendMessage(pendingPhraseMessage, this.defendingPlayer);
+                 if (!pendingPhraseSent)
                 {
                     // Either an error has occured, or the user has disconnected.
                     // Remove the player from the room and end the game.
                     Players.Remove(this.defendingPlayer);
                     break;
-                } */
+                }
 
                 // Get the pending message from the attacker.
                 pendingPhrase = await getMessage(this.attackingPlayer, 20);
