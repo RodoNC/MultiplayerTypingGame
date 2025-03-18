@@ -23,7 +23,7 @@ export class GameWindow extends HTMLElement
         // SET THE INNER HTML.
         shadowRoot.innerHTML = `
 <div id="Display">
-    <span style="font-size: 20px;">Health: <span id="HealthSpan" style="color: red;">100</span></span>
+    <span style="font-size: 20px;">Health: <span id="HealthSpan" style="color: red;"></span></span>
 </div>
 <img id="Monkey" src="monkey.gif"/>
 <div id="Controls">
@@ -71,6 +71,8 @@ export class GameWindow extends HTMLElement
     {
         // SHOW THE WINDOW.
         this.style.display = "flex";
+        this.#healthSpan.innerText = "100";
+
     }
     
     // Closes the window.

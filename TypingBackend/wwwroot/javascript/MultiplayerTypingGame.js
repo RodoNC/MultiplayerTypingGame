@@ -82,7 +82,6 @@ startGame = async (socket) =>
 
                 // SHOW THE GAME.
                 gameWindow.Open()
-
                 break;
             }
             case "promptAttack":
@@ -129,8 +128,11 @@ startGame = async (socket) =>
     }
 
     // CREATE THE PROMISE TO BE RESOLVED WHEN THE GAME ENDS.
-    return new Promise((resolve) =>
+    return (new Promise((resolve) =>
     {
         gameEndPromiseResolver = resolve;
+    })).then(() =>
+    {
+        gameWindow.Close();
     });
 }
