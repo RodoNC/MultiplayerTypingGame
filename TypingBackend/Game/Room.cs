@@ -51,7 +51,7 @@ namespace Game
                 while(!enoughPlayers)
                 {
                     // Close the room if no players remain.
-                    updatePlayerList();
+                    await updatePlayerList();
                     if (!Players.Any())
                     {
                         roomCancellationTokenSource.Cancel();
@@ -276,9 +276,9 @@ namespace Game
         /// <summary>
         /// Removes any players that have disconnected.
         /// </summary>
-        private void updatePlayerList()
+        private  async Task updatePlayerList()
         {
-            Players.ForEach(async (player) =>
+            foreach (Player player in Players)
             {
                 // Remove the player if we cannot ping them.
                 Message pingMessage = new Message
@@ -290,7 +290,7 @@ namespace Game
                 {
                     Players.Remove(player);
                 }
-            });
+            };
         }
 
         /// <summary>

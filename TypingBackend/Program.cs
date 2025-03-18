@@ -35,10 +35,10 @@ app.Use(async (context, next) =>
                 return;
             }
 
-            // Keep the connection alive until the room closes.
-            while (!room!.RoomCancellationToken.IsCancellationRequested)
+            // Keep the connection alive until the websocket is closed.
+            while (webSocket.State == WebSocketState.Open)
             {
-                Thread.Sleep(TimeSpan.FromSeconds(500));
+                await Task.Delay(100);
             }
             
             Console.WriteLine("Creator left");
@@ -69,14 +69,13 @@ app.Use(async (context, next) =>
                 return;
             }
 
-            // Keep the connection alive until the room closes.
-            while (!room!.RoomCancellationToken.IsCancellationRequested)
+            // Keep the connection alive until the websocket is closed.
+            while (webSocket.State == WebSocketState.Open)
             {
                 await Task.Delay(100);
             }
 
             Console.WriteLine("Joiner left");
-
         }
         else
         {
