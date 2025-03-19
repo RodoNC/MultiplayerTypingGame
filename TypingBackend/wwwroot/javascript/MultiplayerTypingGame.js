@@ -2,6 +2,35 @@ let socket = null;
 // ON LOAD FUNCTION.    
 onload = async () =>
 {
+    // RETRIEVE THE ROOMS.
+    const getRoomsUrl = new URL("/getRooms", window.location.href);
+    let response = await fetch(
+        getRoomsUrl.href, 
+        {
+        headers: {'Accept': 'application/json'}
+        });
+    let roomsJson = await response.json();
+    let rooms = roomsJson;
+    
+    // Add the rooms to the table.
+    const roomTable = document.getElementById("RoomTable");
+    const joinRoomTextbox =  document.getElementById("JoinRoomTextbox");
+    const joinRoomButton = document.getElementById("JoinRoomButton");
+    
+    rooms.forEach((room) => {
+        // Create the row with the room details.
+        const roomRow = roomTable.insertRow(-1);
+        roomRow.insertCell(-1).innerText = room.RoomKey;
+        roomRow.insertCell(-1).innerText = room.Players[0].Name;
+        roomRow.insertCell(-1).innerText = room.Players.length;
+
+        // Join room when clicking on the row.
+        roomRow.addEventListener('click', () => {
+            joinRoomTextbox.value = roomRow.cells[0].innerText;
+            joinRoomButton.click();
+          });
+    });
+
     // HANDLE THE USER CREATING A ROOM.
     const createRoomButton =  document.getElementById("CreateRoomButton");
     createRoomButton.addEventListener("click", () =>
@@ -23,27 +52,23 @@ onload = async () =>
     });
 
     // HANDLE THE USER JOINING A ROOM.
-    const joinRoomTextbox =  document.getElementById("JoinRoomTextbox");
-    joinRoomTextbox.addEventListener("keypress", (event) =>
+    joinRoomButton.addEventListener("click", (event) =>
     {
-        if (event.key == "Enter")
+        const joinRoomUrl = new URL("/joinRoom", window.location.href);
+        joinRoomUrl.searchParams.append("roomKey", joinRoomTextbox.value.trim());
+        socket = new WebSocket(joinRoomUrl.href);
+        socket.onclose = () =>
         {
-            const joinRoomUrl = new URL("/joinRoom", window.location.href);
-            joinRoomUrl.searchParams.append("roomKey", joinRoomTextbox.value.trim());
-            socket = new WebSocket(joinRoomUrl.href);
-            socket.onclose = () =>
-            {
-                console.log("websocket closed.");
-            };
-            startGame(socket).then((reason) =>
-            {
-                console.log(reason)
-                // GO BACK TO THE MAIN MENU.
-                document.getElementById("GameWindow").Close();
-                const mainMenu = document.getElementById("MainMenu");
-                mainMenu.style.display = "flex";
-            });
-        } 
+            console.log("websocket closed.");
+        };
+        startGame(socket).then((reason) =>
+        {
+            console.log(reason)
+            // GO BACK TO THE MAIN MENU.
+            document.getElementById("GameWindow").Close();
+            const mainMenu = document.getElementById("MainMenu");
+            mainMenu.style.display = "flex";
+        });
     });
 }
 

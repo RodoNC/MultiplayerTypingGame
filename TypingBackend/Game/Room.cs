@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Game
 {
@@ -11,12 +12,13 @@ namespace Game
     {
         #region Public Members
         /// <summary>The room name.</summary>
-        public string Name { get; private set;} = string.Empty;
+        public string RoomKey { get; private set;} = string.Empty;
 
         /// <summary>The players in the room.</summary>
         public List<Player> Players { get; private set; } = new List<Player>();
         
         /// <summary>The cancellation token to close the room.</summary>
+        [JsonIgnore]
         public CancellationToken RoomCancellationToken { get; private set; }
         #endregion
 
@@ -37,7 +39,7 @@ namespace Game
         /// <param name="name">The room name.</param>
         public Room(Player player, string name)
         {
-            Name = name;
+            RoomKey = name;
             Players.Add(player);
             RoomCancellationToken = roomCancellationTokenSource.Token;        
         }
@@ -85,7 +87,7 @@ namespace Game
             Message startMessage = new Message
             {
                 type = Message.Type.start,
-                roomKey = Name
+                roomKey = RoomKey
             };
             await sendMessage(startMessage);
 

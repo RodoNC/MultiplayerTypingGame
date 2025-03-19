@@ -3,22 +3,25 @@ using System.Text;
 using System.Text.Json;
 using Game;
 
+// SETUP APPLICATION
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 app.Urls.Add("http://*:8080");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-Dictionary<string, Room> roomsByKey = new Dictionary<string, Room>();
 
-// SET UP THE WEBSOCKET.
+// Set up websockets.
 var webSocketOptions = new WebSocketOptions
 {
     KeepAliveInterval = TimeSpan.FromSeconds(1)
 };
 app.UseWebSockets(webSocketOptions);
 
-// ALLOW ESTABLISHING WEBSOCKET CONNECTION.
+// THE ROOMS IN THE APPLICATION.
+Dictionary<string, Room> roomsByKey = new Dictionary<string, Room>();
+
+// THE ENDPOINTS FOR ESTABLISHING WEBSOCKET CONNECTIONS.
 app.Use(async (context, next) =>
 {
     // THE PATH FOR CREATING A ROOM.
@@ -48,6 +51,7 @@ app.Use(async (context, next) =>
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
         }
     }
+
     // THE PATH FOR JOINING A ROOM.
     else if (context.Request.Path == "/joinRoom")
     {
@@ -86,19 +90,27 @@ app.Use(async (context, next) =>
     {
         await next(context);
     }
+});
 
+// THE ENDPOINT FOR GETTING THE LIST OF ROOMS.
+app.MapGet("/getRooms", () =>
+{
+    string roomsJson = JsonSerializer.Serialize(roomsByKey.Values);
+    return roomsJson;
 });
 
 app.Run();
 
-Room? JoinRoom(WebSocket webSocket, String roomKey)
+// HELPER FUNCTIONS.
+// Allow a user to join the room with the given room key.
+Room? JoinRoom(WebSocket webSocket, string roomKey)
 {
     // Create the player.
     Player player = new Player
     {
         WebSocketConnection = webSocket,
         Health = 100,
-        Name = "bobby2"
+        Name = "Billy"
     };
 
     // Get the room.
@@ -121,6 +133,7 @@ Room? JoinRoom(WebSocket webSocket, String roomKey)
     return room;
 }
 
+// Creates a room.
 Room? CreateRoom(WebSocket webSocket)
 {
     // Create the player.
@@ -136,13 +149,13 @@ Room? CreateRoom(WebSocket webSocket)
     Room room = new Room(player, roomKey);
 
     // Add the room to the list of rooms.
-    roomsByKey.Add(room.Name, room);
+    roomsByKey.Add(room.RoomKey, room);
 
     // Show the user the room key.
      var createdMessage = new Message
     {
         type = Message.Type.created,
-        roomKey = room.Name
+        roomKey = room.RoomKey
     };
     var createdMessageJson = JsonSerializer.Serialize(createdMessage);
     webSocket.SendAsync(
@@ -154,8 +167,8 @@ Room? CreateRoom(WebSocket webSocket)
     // Run the room until there are no players.
     room.RunRoom().ContinueWith((task) =>
     {
-        Console.WriteLine($"Room: {room.Name} removed");
-        roomsByKey.Remove(room.Name);
+        Console.WriteLine($"Room: {room.RoomKey} removed");
+        roomsByKey.Remove(room.RoomKey);
     });
 
     return room;

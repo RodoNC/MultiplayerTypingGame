@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using System.Text.Json.Serialization;
 
 namespace Game
 {
@@ -7,8 +8,10 @@ namespace Game
     /// </summary>
     class Player
     {
+        [JsonIgnore]
         public WebSocket? WebSocketConnection { get; set; } = null;
-        public string? Name { get; set; } = null;
+        public string Name { get; set; } = string.Empty;
+        [JsonIgnore]
         public int Health { get; set; } = 100;
     }
 }

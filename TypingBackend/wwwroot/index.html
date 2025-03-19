@@ -10,8 +10,21 @@
 
 <body onload="onLoad()">
     <div id="MainMenu" style="display: flex; flex-direction: column; align-items: center; row-gap: 30px;">
+        <table id="RoomTable">
+            <thead>
+              <tr>
+                <th scope="col">Room Key</th>
+                <th scope="col">Host Player</th>
+                <th scope="col">Players</th>
+              </tr>
+            </thead>
+            <tbody">
+            </tbody>
+          </table>
+          
         <button id="CreateRoomButton" style="width: 50%;">Create Room</button>
         <span>Enter room key: <input id="JoinRoomTextbox" type="text"></input></span>
+        <button id="JoinRoomButton" style="width: 50%;">Join Room</button>
     </div>
     <span id="RoomKeySpan" style="user-select: none; display: none;">room key: <span style="user-select: all;" id="RoomKeyValueSpan"></span></span>
     <game-window id="GameWindow" style="height: 100%; width: 100%; position: absolute; display: none;"/>
