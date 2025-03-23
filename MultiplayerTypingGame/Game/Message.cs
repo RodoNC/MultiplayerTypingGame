@@ -11,6 +11,7 @@ namespace Game
         public enum Type
         {
             ping,
+            pong,
             created,
             start,
             opponentDisconnected,

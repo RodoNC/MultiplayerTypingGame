@@ -53,15 +53,14 @@ namespace Game
                 while(!enoughPlayers)
                 {
                     // Close the room if no players remain.
-                    await updatePlayerList();
-                    if (!Players.Any())
+                    bool playerConnected = await pingPlayer(Players[0]);
+                    if (!playerConnected)
                     {
                         roomCancellationTokenSource.Cancel();
                         return;
                     }
-
-                    // Keep wating for new players.
                     Thread.Sleep(500);
+
                     enoughPlayers = Players.Count == 2;
                 }
 
@@ -276,23 +275,31 @@ namespace Game
         }
 
         /// <summary>
-        /// Removes any players that have disconnected.
+        /// Pings the specified player.
         /// </summary>
-        private  async Task updatePlayerList()
+        /// <returns>
+        /// True if the ping was succesful; false otherwise.
+        /// </returns>
+        private async Task<bool> pingPlayer(Player player)
         {
-            foreach (Player player in Players)
+            Message pingMessage = new Message
             {
-                // Remove the player if we cannot ping them.
-                Message pingMessage = new Message
-                {
-                    type = Message.Type.ping
-                };
-                bool pingSuccessful = await sendMessage(pingMessage, player);
-                if (!pingSuccessful)
-                {
-                    Players.Remove(player);
-                }
+                type = Message.Type.ping
             };
+            bool pingSuccessful = await sendMessage(pingMessage, player);
+            if (!pingSuccessful)
+            {
+                return false;
+            }
+
+            Message? pingResponse = await getMessage(player, 200);
+            bool pongRecieved = pingResponse != null && pingResponse.type == Message.Type.pong;
+            if (!pongRecieved)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -326,9 +333,9 @@ namespace Game
         /// Recieves a message from the specified player.
         /// </summary>
         /// <param name="player">The player to send the message to.</param>
-        /// <param name="timeoutInSeconds">The time to wait to receive the message, 300 seconds by default.</param>
+        /// <param name="timeoutInSeconds">The time to wait to receive the message, 12,000 milliseconds by default.</param>
         /// <returns>The message from the player; null otherwise.</returns>
-        private async Task<Message?> getMessage(Player player, uint timeoutInSeconds = 300)
+        private async Task<Message?> getMessage(Player player, uint timeoutInMillieconds = 300)
         {
             try
             {
@@ -344,14 +351,13 @@ namespace Game
                     await player.WebSocketConnection.CloseAsync(
                         receiveResult.CloseStatus!.Value,
                         receiveResult.CloseStatusDescription,
-                        CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(timeoutInSeconds));
+                        CancellationToken.None).WaitAsync(TimeSpan.FromMilliseconds(timeoutInMillieconds));
 
                     return null;
                 }
 
                 // Return the message.
                 Message? message = JsonSerializer.Deserialize<Message>(buffer.Take(receiveResult.Count).ToArray());
-                Console.WriteLine(message);
                 return message;
             }
             catch (Exception e)
@@ -400,7 +406,7 @@ namespace Game
                         CancellationToken.None);
                 }
         
-                Console.WriteLine($"Sent: {messageJson}");
+                //Console.WriteLine($"Sent: {messageJson}");
                 // Return that the message was sent successfully.
                 return true;
             }

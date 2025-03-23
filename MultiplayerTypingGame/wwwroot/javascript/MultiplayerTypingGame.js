@@ -142,6 +142,8 @@ startGame = async (socket) =>
             }
             case "ping":
             {
+                const pongMessage = { type: "pong" };
+                socket.send(JSON.stringify(pongMessage));
                 break;
             }
             default:
