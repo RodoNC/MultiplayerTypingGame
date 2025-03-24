@@ -90,8 +90,7 @@ namespace Game
                 type = Message.Type.promptReadyUp
             };
             await sendMessage(promptReadyUpMessage);
-            
-            // PROMPT PLAYERS TO READY UP.
+            CancellationTokenSource readyUpCancellationTokenSource = new CancellationTokenSource();
             Task<bool> attackingPlayerReadyUpTask = Task.Run(async () =>
             {
                 Message? readyUpMessage = await getMessage(this.attackingPlayer);
@@ -102,7 +101,8 @@ namespace Game
                     return false;
                 }
                 return true;
-            });
+            },
+            readyUpCancellationTokenSource.Token);
             Task<bool> defendingPlayerReadyupTask = Task.Run(async () =>
             {
                 Message? readyUpMessage = await getMessage(this.defendingPlayer);
@@ -113,9 +113,15 @@ namespace Game
                     return false;
                 }
                 return true;
-            });
+            },
+            readyUpCancellationTokenSource.Token);
 
             // WAIT FOR PLAYERS TO READY UP.
+            bool firstPlayerReadiedUp =  await await Task.WhenAny(new List<Task<bool>> { attackingPlayerReadyUpTask, defendingPlayerReadyupTask });
+            if (!firstPlayerReadiedUp)
+            {
+                readyUpCancellationTokenSource.Cancel();
+            }
             List<bool> readyUpResults = (await Task.WhenAll(attackingPlayerReadyUpTask, defendingPlayerReadyupTask)).ToList();
             bool playersReadiedUp = readyUpResults.All((result) => { return result; });
             if (!playersReadiedUp)

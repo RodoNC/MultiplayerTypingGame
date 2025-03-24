@@ -7,6 +7,8 @@ using Game;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 app.Urls.Add("http://*:8080");
+app.Urls.Add("http://*:80");
+app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
