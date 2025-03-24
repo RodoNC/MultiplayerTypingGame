@@ -1,7 +1,9 @@
 using System.Net.WebSockets;
+using System;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Game
 {
@@ -78,15 +80,53 @@ namespace Game
         private async Task startGame()
         {       
             // CHOOSE WHICH PLAYER ATTACKS FIRST.
-            // TODO.
-            this.attackingPlayer = Players[0];
-            this.defendingPlayer = Players[1];
+            bool coinFlip = new Random().NextDouble() > .5;
+            this.attackingPlayer = Players[Convert.ToInt32(coinFlip)];
+            this.defendingPlayer = Players[Convert.ToInt32(!coinFlip)];
+
+            // PROMPT PLAYERS TO READY UP.
+            Message promptReadyUpMessage = new Message
+            {
+                type = Message.Type.promptReadyUp
+            };
+            await sendMessage(promptReadyUpMessage);
+            
+            // PROMPT PLAYERS TO READY UP.
+            Task<bool> attackingPlayerReadyUpTask = Task.Run(async () =>
+            {
+                Message? readyUpMessage = await getMessage(this.attackingPlayer);
+                bool readyUpMessageReceived = readyUpMessage != null && readyUpMessage.type == Message.Type.readyUp;
+                if (!readyUpMessageReceived)
+                {
+                    Players.Remove(this.attackingPlayer);
+                    return false;
+                }
+                return true;
+            });
+            Task<bool> defendingPlayerReadyupTask = Task.Run(async () =>
+            {
+                Message? readyUpMessage = await getMessage(this.defendingPlayer);
+                bool readyUpMessageReceived = readyUpMessage != null && readyUpMessage.type == Message.Type.readyUp;
+                if (!readyUpMessageReceived)
+                {
+                    Players.Remove(this.defendingPlayer);
+                    return false;
+                }
+                return true;
+            });
+
+            // WAIT FOR PLAYERS TO READY UP.
+            List<bool> readyUpResults = (await Task.WhenAll(attackingPlayerReadyUpTask, defendingPlayerReadyupTask)).ToList();
+            bool playersReadiedUp = readyUpResults.All((result) => { return result; });
+            if (!playersReadiedUp)
+            {
+                return;
+            }
 
             // PROMPT THE PLAYERS THAT THE GAME IS STARTING.
             Message startMessage = new Message
             {
-                type = Message.Type.start,
-                roomKey = RoomKey
+                type = Message.Type.start
             };
             await sendMessage(startMessage);
 
@@ -95,20 +135,13 @@ namespace Game
             {
                 // PROMPT ATTACKING PLAYER.
                 Message attackMessage = new Message
-                    {
-                        type = Message.Type.promptAttack,
-                    };
-                bool promptToAttackSent = await sendMessage(attackMessage, this.attackingPlayer);
-                if (!promptToAttackSent)
                 {
-                    // Either an error has occured, or the user has disconnected.
-                    // Remove the player from the room and end the game.
-                    Players.Remove(this.attackingPlayer);
-                    break;
-                }
+                    type = Message.Type.promptAttack,
+                };
+                await sendMessage(attackMessage, this.attackingPlayer);
 
                 // GET PENDING PHRASE TO DISPLAY TO THE DEFENDER.
-                Message? pendingPhrase = await getMessage(this.attackingPlayer, 20);
+                Message? pendingPhrase = await getMessage(this.attackingPlayer);
                 bool pendingPhraseRetrieved = pendingPhrase != null;
                 if (!pendingPhraseRetrieved)
                 {
@@ -125,17 +158,10 @@ namespace Game
                         type = Message.Type.pendingPhrase,
                         phrase = pendingPhrase!.phrase,
                     };
-                    bool pendingPhraseSent = await sendMessage(pendingPhraseMessage, defendingPlayer);
-                    if (!pendingPhraseSent)
-                    {
-                        // Either an error has occured, or the user has disconnected.
-                        // Remove the player from the room and end the game.
-                        Players.Remove(defendingPlayer);
-                        break;
-                    }
+                    await sendMessage(pendingPhraseMessage, defendingPlayer);
 
                     // Get the pending message from the attacker.
-                    pendingPhrase = await getMessage(this.attackingPlayer, 20);
+                    pendingPhrase = await getMessage(this.attackingPlayer);
                     pendingPhraseRetrieved = pendingPhrase != null;
                     if (!pendingPhraseRetrieved)
                     {
@@ -171,17 +197,10 @@ namespace Game
                     type = Message.Type.promptDefense,
                     phrase = attackResponse!.phrase,
                 };
-                bool promptToDefendSent = await sendMessage(defenseMessage, this.defendingPlayer);
-                if (!promptToDefendSent)
-                {
-                    // Either an error has occured, or the user has disconnected.
-                    // Remove the player from the room and end the game.
-                    Players.Remove(this.defendingPlayer);
-                    break;
-                }
+                await sendMessage(defenseMessage, this.defendingPlayer);
                 
                 // GET THE TIME TO TYPE THE PHRASE.
-                Message? defenseResponse = await getMessage(this.defendingPlayer, 20);
+                Message? defenseResponse = await getMessage(this.defendingPlayer);
                 bool defenseResponseRetrieved = defenseResponse != null;
                 if (!defenseResponseRetrieved)
                 {
@@ -219,15 +238,8 @@ namespace Game
                     health = attackingPlayer.Health,
                     resultMessage = $"Attacker time: {attackResponse!.time} Defense time: {defenseResponse!.time} Attack landed: {attackLanded}"
                 };
-                bool attackResultSent = await sendMessage(attackerResultMessage, attackingPlayer);
-                if (!attackResultSent)
-                {
-                    // Either an error has occured, or the user has disconnected.
-                    // Remove the player from the room and end the game.
-                    Players.Remove(attackingPlayer);
-                    break;
-                }
-
+                await sendMessage(attackerResultMessage, attackingPlayer);
+                
                 // Send the results to the defender.
                 var defenderResultMessage = new Message
                 {
@@ -235,14 +247,7 @@ namespace Game
                     health = defendingPlayer.Health,
                     resultMessage = $"Attacker time: {attackResponse!.time} Defense time: {defenseResponse!.time} Damage: {damageMultiplier}"
                 };
-                bool defenseResultSent = await sendMessage(defenderResultMessage, defendingPlayer);
-                if (!defenseResultSent)
-                {
-                    // Either an error has occured, or the user has disconnected.
-                    // Remove the player from the room and end the game.
-                    Players.Remove(defendingPlayer);
-                    break;
-                }
+                await sendMessage(defenderResultMessage, defendingPlayer);
                 
                 // Add a small delay to let the players see the results.
                 //Thread.Sleep(TimeSpan.FromSeconds(5));
@@ -286,13 +291,9 @@ namespace Game
             {
                 type = Message.Type.ping
             };
-            bool pingSuccessful = await sendMessage(pingMessage, player);
-            if (!pingSuccessful)
-            {
-                return false;
-            }
+            await sendMessage(pingMessage, player);
 
-            Message? pingResponse = await getMessage(player, 200);
+            Message? pingResponse = await getMessage(player);
             bool pongRecieved = pingResponse != null && pingResponse.type == Message.Type.pong;
             if (!pongRecieved)
             {
@@ -333,9 +334,9 @@ namespace Game
         /// Recieves a message from the specified player.
         /// </summary>
         /// <param name="player">The player to send the message to.</param>
-        /// <param name="timeoutInSeconds">The time to wait to receive the message, 12,000 milliseconds by default.</param>
+        /// <param name="timeoutInSeconds">The time to wait to receive the message.</param>
         /// <returns>The message from the player; null otherwise.</returns>
-        private async Task<Message?> getMessage(Player player, uint timeoutInMillieconds = 300)
+        private async Task<Message?> getMessage(Player player)
         {
             try
             {
@@ -351,7 +352,7 @@ namespace Game
                     await player.WebSocketConnection.CloseAsync(
                         receiveResult.CloseStatus!.Value,
                         receiveResult.CloseStatusDescription,
-                        CancellationToken.None).WaitAsync(TimeSpan.FromMilliseconds(timeoutInMillieconds));
+                        CancellationToken.None).WaitAsync(TimeSpan.FromMilliseconds(1000));
 
                     return null;
                 }
@@ -373,49 +374,38 @@ namespace Game
         /// <param name="message">The message to send.</param>
         /// <param name="player">The player to send the message to.</param>
         /// <returns>True if the message was sent; false otherwise.</returns>
-        private async Task<bool> sendMessage(Message message, Player? player = null)
+        private async Task sendMessage(Message message, Player? player = null)
         {
-            try
-            {
-                // Serialize the message.
-                var messageJson = JsonSerializer.Serialize(message);
+            // Serialize the message.
+            var messageJson = JsonSerializer.Serialize(message);
 
-                // Check if a player was was specified.
-                bool playerWasSpecified = player != null;
-                if (playerWasSpecified)
-                {
-                    // Send to the specific player.
-                    await player!.WebSocketConnection!.SendAsync(
-                        new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
-                        WebSocketMessageType.Text,
-                        true,
-                        CancellationToken.None);
-                }
-                else
-                {
-                    // Send to both players.
-                    await attackingPlayer!.WebSocketConnection!.SendAsync(
-                        new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
-                        WebSocketMessageType.Text,
-                        true,
-                        CancellationToken.None);
-                    await defendingPlayer!.WebSocketConnection!.SendAsync(
-                        new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
-                        WebSocketMessageType.Text,
-                        true,
-                        CancellationToken.None);
-                }
-        
-                //Console.WriteLine($"Sent: {messageJson}");
-                // Return that the message was sent successfully.
-                return true;
-            }
-            catch(Exception e)
+            // Check if a player was was specified.
+            bool playerWasSpecified = player != null;
+            if (playerWasSpecified)
             {
-                Console.Error.WriteLine(e);
-                return false;
+                // Send to the specific player.
+                await player!.WebSocketConnection!.SendAsync(
+                    new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
             }
-
+            else
+            {
+                // Send to both players.
+                await attackingPlayer!.WebSocketConnection!.SendAsync(
+                    new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
+                await defendingPlayer!.WebSocketConnection!.SendAsync(
+                    new ArraySegment<byte>(Encoding.ASCII.GetBytes(messageJson)),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None);
+            }
+    
+            Console.WriteLine($"Sent: {messageJson}");
         }
         #endregion
     }

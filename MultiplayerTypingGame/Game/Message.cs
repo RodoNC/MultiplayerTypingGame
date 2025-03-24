@@ -13,6 +13,8 @@ namespace Game
             ping,
             pong,
             created,
+            promptReadyUp,
+            readyUp,
             start,
             opponentDisconnected,
             promptAttack,

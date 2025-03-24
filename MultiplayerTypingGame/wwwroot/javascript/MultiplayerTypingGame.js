@@ -45,7 +45,7 @@ onload = async () =>
         {
             console.log(reason)
             // GO BACK TO THE MAIN MENU.
-            document.getElementById("GameWindow").Close();
+            document.getElementById("GameDisplay").Close();
             const mainMenu = document.getElementById("MainMenu");
             mainMenu.style.display = "flex";
         });
@@ -65,7 +65,7 @@ onload = async () =>
         {
             console.log(reason)
             // GO BACK TO THE MAIN MENU.
-            document.getElementById("GameWindow").Close();
+            document.getElementById("GameDisplay").Close();
             const mainMenu = document.getElementById("MainMenu");
             mainMenu.style.display = "flex";
         });
@@ -84,7 +84,8 @@ startGame = async (socket) =>
     socket.onerror = () => { gameEndPromiseResolver("The connection was closed due to a connection error."); };
     
     // HANDLE MESSAGES FROM THE WEBSOCKET CONNECTION.
-    const gameWindow = document.getElementById("GameWindow");
+    const gameDisplay = document.getElementById("GameDisplay");
+    const readyUpPrompt = document.getElementById("ReadyUpPrompt");
     socket.onmessage = (event) =>
     {
         const message = JSON.parse(event.data);
@@ -99,19 +100,27 @@ startGame = async (socket) =>
                 roomKeyValueSpan.innerText = message.roomKey;
                 break;
             }
-            case "start":
+            case "promptReadyUp":
             {
                 // Hide the room key.
                 const roomKeySpan = document.getElementById("RoomKeySpan");
                 roomKeySpan.style.display = "none";
 
-                // SHOW THE GAME.
-                gameWindow.Open()
+                readyUpPrompt.PromptPlayer().then((response) =>
+                {
+                    socket.send(JSON.stringify(response));
+                });
+                break;
+            }
+            case "start":
+            {
+                readyUpPrompt.Close();
+                gameDisplay.Open();
                 break;
             }
             case "promptAttack":
             {
-                gameWindow.Attack(socket).then((response) =>
+                gameDisplay.Attack(socket).then((response) =>
                 {
                     socket.send(JSON.stringify(response));
                 });
@@ -119,12 +128,12 @@ startGame = async (socket) =>
             }
             case "pendingPhrase":
             {
-                gameWindow.DisplayPendingPhrase(message.phrase);
+                gameDisplay.DisplayPendingPhrase(message.phrase);
                 break;  
             }
             case "promptDefense":
             {
-                gameWindow.Defend(message.phrase).then((response) =>
+                gameDisplay.Defend(message.phrase).then((response) =>
                 {
                     socket.send(JSON.stringify(response));
                 });
@@ -132,12 +141,12 @@ startGame = async (socket) =>
             }
             case "result":
             {
-                gameWindow.ShowResult(message);                
+                gameDisplay.ShowResult(message);                
                 break;
             }
             case "opponentDisconnected":
             {
-                gameWindow.Close();
+                gameDisplay.Close();
                 break;
             }
             case "ping":
@@ -160,6 +169,6 @@ startGame = async (socket) =>
         gameEndPromiseResolver = resolve;
     })).then(() =>
     {
-        gameWindow.Close();
+        gameDisplay.Close();
     });
 }

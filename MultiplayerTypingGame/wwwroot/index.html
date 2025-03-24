@@ -27,10 +27,12 @@
         <button id="JoinRoomButton" style="width: 50%;">Join Room</button>
     </div>
     <span id="RoomKeySpan" style="user-select: none; display: none;">room key: <span style="user-select: all;" id="RoomKeyValueSpan"></span></span>
-    <game-window id="GameWindow" style="height: 100%; width: 100%; position: absolute; display: none;"/>
+    <ready-up-prompt id="ReadyUpPrompt" style="height: 100%; width: 100%; position: absolute; display: none;"></ready-up-prompt>
+    <game-display id="GameDisplay" style="height: 100%; width: 100%; position: absolute; display: none;"></game-display>
 </body>
 
-<script type="module" src="javascript/Controls/GameWindow/GameWindow.js"></script>
+<script type="module" src="javascript/Controls/GameDisplay/GameDisplay.js"></script>
+<script type="module" src="javascript/Controls/ReadyUpPrompt.js"></script>
 <script type="text/javascript" src="javascript/MultiplayerTypingGame.js"></script>
 
 </html>

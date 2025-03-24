@@ -74,7 +74,7 @@ app.Use(async (context, next) =>
             {
                 WebSocketConnection = webSocket,
                 Health = 100,
-                Name = "Billy"
+                Name = "Bobby"
             };
             Room? room = JoinRoom(player, roomKey);
             bool roomJoinedSuccessfully = room != null;

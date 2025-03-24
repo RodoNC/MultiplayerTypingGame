@@ -1,7 +1,7 @@
 import { AttackControl } from "./AttackControl.js";
 import { DefenseControl } from "./DefenseControl.js";
 
-export class GameWindow extends HTMLElement
+export class GameDisplay extends HTMLElement
 {
     // ELEMENTS.
     #attackControl = null;
@@ -66,19 +66,18 @@ export class GameWindow extends HTMLElement
     }
     
     // PUBLIC FUNCTIONS.
-    // Opens the window.
+    // Opens the control.
     Open()
     {
-        // SHOW THE WINDOW.
+        // SHOW THE CONTROL.
         this.style.display = "flex";
         this.#healthSpan.innerText = "100";
-
     }
     
-    // Closes the window.
+    // Closes the control.
     Close()
     {
-        // CLOSE THE WINDOW.
+        // CLOSE THE CONTROL.
         this.style.display = "none";
     }
 
@@ -106,4 +105,4 @@ export class GameWindow extends HTMLElement
         this.#healthSpan.innerText = result.health;
     }
 }
-customElements.define("game-window", GameWindow);
+customElements.define("game-display", GameDisplay);
