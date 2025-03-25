@@ -20,7 +20,8 @@ export class ReadyUpPrompt extends HTMLElement
         const shadowRoot = this.attachShadow({ mode: "open" });
 
         // SET THE INNER HTML.
-        shadowRoot.innerHTML = `
+        shadowRoot.innerHTML = //html
+        `
 <div id="Container">
     <span id="ReadiedUpMessage" style="display: none; font-size: 20px;">Readied up. Waiting for opponent.</span>
     <button id="ReadyUpButton">Ready Up</button>
@@ -31,7 +32,8 @@ export class ReadyUpPrompt extends HTMLElement
 
         // SET THE STYLE.
         const style = document.createElement("style");
-        style.textContent = `
+        style.textContent = //css
+        `
         #Container
         {
             display: flex;

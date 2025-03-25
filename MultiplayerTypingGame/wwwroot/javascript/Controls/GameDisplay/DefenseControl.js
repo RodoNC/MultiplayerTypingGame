@@ -27,7 +27,8 @@ export class DefenseControl extends HTMLElement
         const shadowRoot = this.attachShadow({ mode: "open" });
 
         // SET THE INNER HTML.
-        shadowRoot.innerHTML = `
+        shadowRoot.innerHTML = //html
+        `
 <div id="Container">
     <span style="font-size: 20px;">Defend! Type in the phrase.</span>
     <span id="PhraseDisplaySpan"></span>
@@ -42,7 +43,8 @@ export class DefenseControl extends HTMLElement
 
         // SET THE STYLE.
         const style = document.createElement("style");
-        style.textContent = `
+        style.textContent = //css
+        `
         #Container
         {
             display: flex;
@@ -60,7 +62,8 @@ export class DefenseControl extends HTMLElement
         {
             height: 20px;
             font-size: 18px;
-        }`;
+        }
+        `;
         shadowRoot.appendChild(style);
     }
 

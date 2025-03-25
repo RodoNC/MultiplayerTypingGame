@@ -26,7 +26,8 @@ export class AttackControl extends HTMLElement
         const shadowRoot = this.attachShadow({ mode: "open" });
 
         // SET THE INNER HTML.
-        shadowRoot.innerHTML = `
+        shadowRoot.innerHTML = //html
+        `
 <div id="Container">
     <span style="font-size: 20px;">Attack! Type in a phrase.</span>
     <div>
@@ -39,7 +40,8 @@ export class AttackControl extends HTMLElement
 
         // SET THE STYLE.
         const style = document.createElement("style");
-        style.textContent = `
+        style.textContent = //css
+        `
         #Container
         {
             display: flex;

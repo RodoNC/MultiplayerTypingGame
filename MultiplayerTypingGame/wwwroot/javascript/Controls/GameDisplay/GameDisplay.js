@@ -21,7 +21,8 @@ export class GameDisplay extends HTMLElement
         const shadowRoot = this.attachShadow({ mode: "open" });
 
         // SET THE INNER HTML.
-        shadowRoot.innerHTML = `
+        shadowRoot.innerHTML = //html
+        `
 <div id="Display">
     <span style="font-size: 20px;">Health: <span id="HealthSpan" style="color: red;"></span></span>
 </div>
@@ -41,26 +42,27 @@ export class GameDisplay extends HTMLElement
 
         // Set the style of the contained elements.
         const style = document.createElement("style");
-        style.textContent = `
-            #Display
-            {
-                height: 50%; 
-            }
+        style.textContent = //css
+        `
+        #Display
+        {
+            height: 50%; 
+        }
 
-            #Monkey
-            {
-                height: 60%;
-                width: 30%;
-                margin: auto;
-            }
+        #Monkey
+        {
+            height: 60%;
+            width: 30%;
+            margin: auto;
+        }
 
-            #Controls
-            {
-                display: flex;
-                width: 100%;
-                height: 50%;
-                justify-content: center;
-            }
+        #Controls
+        {
+            display: flex;
+            width: 100%;
+            height: 50%;
+            justify-content: center;
+        }
         `;
         shadowRoot.appendChild(style);
     }

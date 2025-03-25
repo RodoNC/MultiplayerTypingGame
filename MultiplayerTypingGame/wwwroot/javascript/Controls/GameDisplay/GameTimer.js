@@ -27,14 +27,16 @@ export class GameTimer extends HTMLElement
 
         // SET THE STYLE.
         const style = document.createElement("style");
-        style.textContent = `
-span
-{
-    border: 2px solid black;
-    font-size: 40px;
-    padding: 1px 3px 1px;
-    margin-right: 10px;
-}`;
+        style.textContent = //css
+        `
+        span
+        {
+            border: 2px solid black;
+            font-size: 40px;
+            padding: 1px 3px 1px;
+            margin-right: 10px;
+        }
+    `;
         shadowRoot.appendChild(style);
     }
 
