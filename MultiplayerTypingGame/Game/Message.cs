@@ -13,6 +13,8 @@ namespace Game
             ping,
             pong,
             created,
+            joined,
+            waitingForOpponent,
             promptReadyUp,
             readyUp,
             start,
@@ -22,7 +24,8 @@ namespace Game
             attackResponse,
             promptDefense,
             defenseResponse,
-            result
+            result,
+            gameEnded
         }
         #endregion
 
@@ -32,6 +35,6 @@ namespace Game
         public double? time { get; set; }
         public int health { get; set; }
         public string? resultMessage { get; set; }
-        public string? roomKey { get; set; }
+        public string? roomName { get; set; }
     }
 }

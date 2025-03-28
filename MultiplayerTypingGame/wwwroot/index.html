@@ -1,33 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monkey Typers</title>
+<link rel="icon" type="image/x-icon" href="/monkey.gif">
 </head>
 
 <style>
+    #RoomTable
+    {
+      table-layout: fixed;
+      width: 50%;
+      border-collapse: collapse;
+
+      thead th
+      {
+        text-align: center;
+        border: 3px solid black;
+      }
+
+      tbody
+      {
+        tr:nth-child(even)
+        {
+          background-color: lightgrey;
+        }
+
+        td
+        {
+          text-align: center;
+        }
+      }
+    }
+
+    #RoomKeyColumn
+    {
+      width: 80%;
+    }
     
+    #PlayerCountColumn
+    {
+      width: 20%;
+    }
+
+    #RoomNameSpan
+    {
+      user-select: none;
+      display: none;
+      position: fixed;
+      top: 5px;
+      right: 5px;
+      z-index: 99;
+    }
+
+    #ReadyUpPrompt
+    {
+      display: none;
+      position: absolute; 
+      width: 100%;
+      top: 50%;
+    }
+
+    #GameResultSpan
+    {
+      user-select: none;
+      position: fixed;
+      left: 50%;
+      top: 25%;
+      transform: translate(-50%, -50%);
+      z-index: 99;
+
+      font-size: xx-large;
+    }
+
+    @media screen and (max-width: 800px)
+    {
+      #RoomTable
+      {
+        table-layout: fixed;
+        width: 75%;
+      }
+    }
 </style>
 
 <body onload="onLoad()">
     <div id="MainMenu" style="display: flex; flex-direction: column; align-items: center; row-gap: 30px;">
         <table id="RoomTable">
-            <thead>
-              <tr>
-                <th scope="col">Room Key</th>
-                <th scope="col">Host Player</th>
-                <th scope="col">Players</th>
-              </tr>
-            </thead>
-            <tbody">
-            </tbody>
-          </table>
-          
-        <button id="CreateRoomButton" style="width: 50%;">Create Room</button>
-        <span>Enter room key: <input id="JoinRoomTextbox" type="text"></input></span>
-        <button id="JoinRoomButton" style="width: 50%;">Join Room</button>
+          <thead>
+            <tr>
+              <th id="RoomNameColumn" scope="col">Room Key</th>
+              <th id="PlayerCountColumn" scope="col">Players</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+        <span id="NoRoomsOpenMessage" style="display: none;">No rooms open</span>
+        <span>Room Name: <input id="CreateRoomTextbox" type="text"></input><button id="CreateRoomButton">Create Room</button></span>
     </div>
-    <span id="RoomKeySpan" style="user-select: none; display: none;">room key: <span style="user-select: all;" id="RoomKeyValueSpan"></span></span>
-    <ready-up-prompt id="ReadyUpPrompt" style="height: 100%; width: 100%; position: absolute; display: none;"></ready-up-prompt>
+    <span id="RoomNameSpan">Room Name: <span style="user-select: all;" id="RoomNameValueSpan"></span></span>
+    <ready-up-prompt id="ReadyUpPrompt"></ready-up-prompt>
+    <span id="GameResultSpan"></span>
     <game-display id="GameDisplay" style="height: 100%; width: 100%; position: absolute; display: none;"></game-display>
 </body>
 

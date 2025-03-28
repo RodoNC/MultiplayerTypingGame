@@ -12,24 +12,43 @@ onload = async () =>
     let roomsJson = await response.json();
     let rooms = roomsJson;
     
-    // Add the rooms to the table.
-    const roomTable = document.getElementById("RoomTable");
-    const joinRoomTextbox =  document.getElementById("JoinRoomTextbox");
-    const joinRoomButton = document.getElementById("JoinRoomButton");
-    
+    // ADD THE ROOMS TO THE TABLE.
+    const roomTableBody = document.getElementById("RoomTable").getElementsByTagName('tbody')[0];
     rooms.forEach((room) => {
-        // Create the row with the room details.
-        const roomRow = roomTable.insertRow(-1);
-        roomRow.insertCell(-1).innerText = room.RoomKey;
-        roomRow.insertCell(-1).innerText = room.Players[0].Name;
-        roomRow.insertCell(-1).innerText = room.Players.length;
+        // CREATE THE ROW WITH THE ROOM DETAILS.
+        const roomRow = roomTableBody.insertRow(-1);
+        roomRow.insertCell(-1).innerText = room.RoomName;
+        roomRow.insertCell(-1).innerText = `${room.Players.length}/2`;
+        
+        // JOIN ROOM WHEN CLICKING ON THE ROW.
+        // Check if the room is full.
+        const roomIsFull = room.Players.length === 2;
+        if (roomIsFull)
+        {
+            return;
+        }
 
-        // Join room when clicking on the row.
+        // Make the room appear clickable.
+        roomRow.style.cursor = "pointer";
         roomRow.addEventListener('click', () => {
-            joinRoomTextbox.value = roomRow.cells[0].innerText;
-            joinRoomButton.click();
-          });
+
+            // Join the room.
+            const joinRoomUrl = new URL("/joinRoom", window.location.href);
+            joinRoomUrl.searchParams.append("roomName", roomRow.cells[0].innerText.trim());
+            socket = new WebSocket(joinRoomUrl.href);
+            socket.onclose = () =>
+            {
+                console.log("websocket closed.");
+            };
+            startGame(socket);
+        });
     });
+
+    // Show a message if there are no rooms.
+    if (rooms == null || rooms.length === 0)
+    {
+        document.getElementById("NoRoomsOpenMessage").style.display = "block";
+    }
 
     // HANDLE THE USER CREATING A ROOM.
     const createRoomButton =  document.getElementById("CreateRoomButton");
@@ -41,34 +60,7 @@ onload = async () =>
         {
             console.log("websocket closed.");
         };
-        startGame(socket).then((reason) =>
-        {
-            console.log(reason)
-            // GO BACK TO THE MAIN MENU.
-            document.getElementById("GameDisplay").Close();
-            const mainMenu = document.getElementById("MainMenu");
-            mainMenu.style.display = "flex";
-        });
-    });
-
-    // HANDLE THE USER JOINING A ROOM.
-    joinRoomButton.addEventListener("click", (event) =>
-    {
-        const joinRoomUrl = new URL("/joinRoom", window.location.href);
-        joinRoomUrl.searchParams.append("roomKey", joinRoomTextbox.value.trim());
-        socket = new WebSocket(joinRoomUrl.href);
-        socket.onclose = () =>
-        {
-            console.log("websocket closed.");
-        };
-        startGame(socket).then((reason) =>
-        {
-            console.log(reason)
-            // GO BACK TO THE MAIN MENU.
-            document.getElementById("GameDisplay").Close();
-            const mainMenu = document.getElementById("MainMenu");
-            mainMenu.style.display = "flex";
-        });
+        startGame(socket);
     });
 }
 
@@ -86,26 +78,30 @@ startGame = async (socket) =>
     // HANDLE MESSAGES FROM THE WEBSOCKET CONNECTION.
     const gameDisplay = document.getElementById("GameDisplay");
     const readyUpPrompt = document.getElementById("ReadyUpPrompt");
+    const gameResultSpan = document.getElementById("GameResultSpan");
     socket.onmessage = (event) =>
     {
         const message = JSON.parse(event.data);
         switch (message.type)
         {
             case "created":
+            case "joined":
             {
                 // Show the room key.
-                const roomKeySpan = document.getElementById("RoomKeySpan");
-                roomKeySpan.style.display = "block";
-                const roomKeyValueSpan = document.getElementById("RoomKeyValueSpan");
-                roomKeyValueSpan.innerText = message.roomKey;
+                const roomNameSpan = document.getElementById("RoomNameSpan");
+                roomNameSpan.style.display = "block";
+                const roomNameValueSpan = document.getElementById("RoomNameValueSpan");
+                roomNameValueSpan.innerText = message.roomName;
+                break;
+            }
+            case "waitingForOpponent":
+            {
+                readyUpPrompt.Close();
+                gameDisplay.Close();
                 break;
             }
             case "promptReadyUp":
             {
-                // Hide the room key.
-                const roomKeySpan = document.getElementById("RoomKeySpan");
-                roomKeySpan.style.display = "none";
-
                 readyUpPrompt.PromptPlayer().then((response) =>
                 {
                     socket.send(JSON.stringify(response));
@@ -115,6 +111,7 @@ startGame = async (socket) =>
             case "start":
             {
                 readyUpPrompt.Close();
+                gameResultSpan.innerText = "";
                 gameDisplay.Open();
                 break;
             }
@@ -147,6 +144,13 @@ startGame = async (socket) =>
             case "opponentDisconnected":
             {
                 gameDisplay.Close();
+                readyUpPrompt.Close();
+                break;
+            }
+            case "gameEnded":
+            {
+                gameDisplay.Close();
+                gameResultSpan.innerText = message.resultMessage;
                 break;
             }
             case "ping":

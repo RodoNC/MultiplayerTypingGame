@@ -51,8 +51,7 @@ export class GameDisplay extends HTMLElement
 
         #Monkey
         {
-            height: 60%;
-            width: 30%;
+            max-width: 30%;
             margin: auto;
         }
 
@@ -62,6 +61,28 @@ export class GameDisplay extends HTMLElement
             width: 100%;
             height: 50%;
             justify-content: center;
+        }
+
+        @media screen and (max-width: 800px)
+        {
+            #Display
+            {
+                height: 50%; 
+            }
+
+            #Monkey
+            {
+                max-width: 50%;
+                margin: auto;
+            }
+
+            #Controls
+            {
+                display: flex;
+                width: 100%;
+                height: 50%;
+                justify-content: center;
+            }
         }
         `;
         shadowRoot.appendChild(style);
@@ -86,6 +107,7 @@ export class GameDisplay extends HTMLElement
     // Allow the user to attack.
     async Attack(socket)
     {
+        this.#defenseControl.Close();
         return await this.#attackControl.Open(socket);
     }
     

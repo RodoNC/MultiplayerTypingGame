@@ -159,7 +159,7 @@ export class DefenseControl extends HTMLElement
     }
 
     // Closes the control.
-    #close()
+    Close()
     {
         // RESET THE CONTROL.
         this.#gracePeriodInSeconds = 5;
@@ -189,7 +189,7 @@ export class DefenseControl extends HTMLElement
                 const typingEndDateTime = new Date();
                 const typeTimeInSeconds = (typingEndDateTime - this.#typingStartDateTime) / 1000;
                 this.#defensePromiseResolver({ time: typeTimeInSeconds });
-                this.#close();
+                this.Close();
             });
         }
     }

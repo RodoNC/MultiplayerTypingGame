@@ -1,9 +1,7 @@
 using System.Net.WebSockets;
-using System;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Game
 {
@@ -14,20 +12,13 @@ namespace Game
     {
         #region Public Members
         /// <summary>The room name.</summary>
-        public string RoomKey { get; private set;} = string.Empty;
+        public string RoomName { get; private set;} = string.Empty;
 
         /// <summary>The players in the room.</summary>
         public List<Player> Players { get; private set; } = new List<Player>();
-        
-        /// <summary>The cancellation token to close the room.</summary>
-        [JsonIgnore]
-        public CancellationToken RoomCancellationToken { get; private set; }
         #endregion
 
         #region Private Members
-        /// <summary>The cancellation token source to close the room.</summary>
-        private CancellationTokenSource roomCancellationTokenSource = new CancellationTokenSource();
-        /// <summary>The attacking player.</summary>
         private Player? attackingPlayer;
         /// <summary>The defending player.</summary>
         private Player? defendingPlayer;
@@ -41,9 +32,8 @@ namespace Game
         /// <param name="name">The room name.</param>
         public Room(Player player, string name)
         {
-            RoomKey = name;
+            RoomName = name;
             Players.Add(player);
-            RoomCancellationToken = roomCancellationTokenSource.Token;        
         }
 
         public async Task RunRoom()
@@ -52,13 +42,21 @@ namespace Game
             {
                 // WAIT FOR THERE TO BE ENOUGH PLAYERS.
                 bool enoughPlayers = Players.Count == 2;
+                if (!enoughPlayers)
+                {
+                    // LET PLAYER KNOW TO WAIT FOR OPPONENT.
+                    var waitingForOpponentMessage = new Message
+                    {
+                        type = Message.Type.waitingForOpponent
+                    };
+                    await sendMessage(waitingForOpponentMessage, Players[0]);
+                }
                 while(!enoughPlayers)
                 {
                     // Close the room if no players remain.
                     bool playerConnected = await pingPlayer(Players[0]);
                     if (!playerConnected)
                     {
-                        roomCancellationTokenSource.Cancel();
                         return;
                     }
                     Thread.Sleep(500);
@@ -79,6 +77,9 @@ namespace Game
         /// <returns>A task the completes once the game ends.</returns>
         private async Task startGame()
         {       
+            // RESET THE HEALTH OF THE PLAYERS.
+            Players.ForEach(player => player.Health = 100);
+
             // CHOOSE WHICH PLAYER ATTACKS FIRST.
             bool coinFlip = new Random().NextDouble() > .5;
             this.attackingPlayer = Players[Convert.ToInt32(coinFlip)];
@@ -126,6 +127,16 @@ namespace Game
             bool playersReadiedUp = readyUpResults.All((result) => { return result; });
             if (!playersReadiedUp)
             {
+                // Let the remaining connected player know that the other player disconnected.
+                bool playerRemains = Players.Any();
+                if (playerRemains)
+                {
+                    Message playerDisconnectedMessage = new Message
+                    {
+                        type = Message.Type.opponentDisconnected
+                    };
+                    await sendMessage(playerDisconnectedMessage, Players[0]);
+                }
                 return;
             }
 
@@ -255,13 +266,25 @@ namespace Game
                 };
                 await sendMessage(defenderResultMessage, defendingPlayer);
                 
-                // Add a small delay to let the players see the results.
-                //Thread.Sleep(TimeSpan.FromSeconds(5));
-
                 // END THE GAME IF ANY OF THE PLAYERS LOST.
                 bool playerLost = defendingPlayer.Health <= 0 || attackingPlayer.Health <= 0;
                 if (playerLost)
                 {
+                    // LET THE PLAYERS KNOW RESULTS.
+                    Player winner = defendingPlayer.Health > 0 ? defendingPlayer : attackingPlayer;
+                    Player loser = attackingPlayer.Health > 0 ? defendingPlayer : attackingPlayer;
+                    Message gameWonMessage = new Message
+                    {
+                        type = Message.Type.gameEnded,
+                        resultMessage = "You Won!"
+                    };
+                    await sendMessage(gameWonMessage, winner);
+                    Message gameLostMessage = new Message
+                    {
+                        type = Message.Type.gameEnded,
+                        resultMessage = "You Lost..."
+                    };
+                    await sendMessage(gameLostMessage, loser);
                     break;
                 }
 
@@ -280,9 +303,6 @@ namespace Game
                 };
                 await sendMessage(playerDisconnectedMessage, Players[0]);
             }
-
-            // RESET THE HEALTH OF THE PLAYERS.
-            Players.ForEach(player => player.Health = 100);
         }
 
         /// <summary>
