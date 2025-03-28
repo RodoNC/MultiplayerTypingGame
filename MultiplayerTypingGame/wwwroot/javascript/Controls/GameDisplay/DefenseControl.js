@@ -88,6 +88,9 @@ export class DefenseControl extends HTMLElement
         // HANDLE THE USER TYPING.
         this.#phraseTextbox.addEventListener("input", () =>
         {
+            // Make input lowecase.
+            this.#phraseTextbox.value = this.#phraseTextbox.value.toLowerCase();
+
             // End the grace period.
             const userStartedTyping = this.#typingStartDateTime != null;
             if (!userStartedTyping)

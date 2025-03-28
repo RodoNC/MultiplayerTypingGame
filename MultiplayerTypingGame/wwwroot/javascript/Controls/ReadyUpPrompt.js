@@ -82,6 +82,10 @@ export class ReadyUpPrompt extends HTMLElement
     // Closes the control.
     Close()
     {
+        // RESOLVE THE PROMISE.
+        // This is needed since the server is waiting on the player to ready up.
+        this.#readyUpPromiseResolver({ type: "readyUp" } );
+
         // HIDE THE CONTROL.
         this.style.display = "none";
     }

@@ -61,6 +61,7 @@ export class AttackControl extends HTMLElement
         // HANDLE THE USER STARTING TO TYPE.
         this.#phraseTextbox.addEventListener("input", () =>
         {
+            this.#phraseTextbox.value = this.#phraseTextbox.value.toLowerCase();
             const startedTyping = this.#typingStartDateTime != null;
             if (!startedTyping)
             {

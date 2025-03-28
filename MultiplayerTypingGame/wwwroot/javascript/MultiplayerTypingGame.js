@@ -79,6 +79,7 @@ startGame = async (socket) =>
     const gameDisplay = document.getElementById("GameDisplay");
     const readyUpPrompt = document.getElementById("ReadyUpPrompt");
     const gameResultSpan = document.getElementById("GameResultSpan");
+    const waitingForOpponentMessageSpan = document.getElementById("WaitingForOpponentMessageSpan");
     socket.onmessage = (event) =>
     {
         const message = JSON.parse(event.data);
@@ -98,10 +99,12 @@ startGame = async (socket) =>
             {
                 readyUpPrompt.Close();
                 gameDisplay.Close();
+                waitingForOpponentMessageSpan.style.display = "block";
                 break;
             }
             case "promptReadyUp":
-            {
+                {
+                waitingForOpponentMessageSpan.style.display = "none";
                 readyUpPrompt.PromptPlayer().then((response) =>
                 {
                     socket.send(JSON.stringify(response));
@@ -173,6 +176,6 @@ startGame = async (socket) =>
         gameEndPromiseResolver = resolve;
     })).then(() =>
     {
-        gameDisplay.Close();
+        window.location.reload();
     });
 }

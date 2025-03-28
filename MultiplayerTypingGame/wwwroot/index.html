@@ -61,6 +61,17 @@
       top: 50%;
     }
 
+    #WaitingForOpponentMessageSpan
+    {
+      display: none;
+      user-select: none;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 99;
+    }
+
     #GameResultSpan
     {
       user-select: none;
@@ -100,6 +111,7 @@
     </div>
     <span id="RoomNameSpan">Room Name: <span style="user-select: all;" id="RoomNameValueSpan"></span></span>
     <ready-up-prompt id="ReadyUpPrompt"></ready-up-prompt>
+    <span id="WaitingForOpponentMessageSpan">Waiting for oponent to join.</span>
     <span id="GameResultSpan"></span>
     <game-display id="GameDisplay" style="height: 100%; width: 100%; position: absolute; display: none;"></game-display>
 </body>

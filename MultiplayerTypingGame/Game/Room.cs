@@ -40,6 +40,12 @@ namespace Game
         {
             while (true)
             {
+                // CLOSE THE ROOM IF THERE ARE NO PLAYERS.
+                if (!Players.Any())
+                {
+                    return;
+                }
+
                 // WAIT FOR THERE TO BE ENOUGH PLAYERS.
                 bool enoughPlayers = Players.Count == 2;
                 if (!enoughPlayers)
@@ -91,7 +97,6 @@ namespace Game
                 type = Message.Type.promptReadyUp
             };
             await sendMessage(promptReadyUpMessage);
-            CancellationTokenSource readyUpCancellationTokenSource = new CancellationTokenSource();
             Task<bool> attackingPlayerReadyUpTask = Task.Run(async () =>
             {
                 Message? readyUpMessage = await getMessage(this.attackingPlayer);
@@ -102,8 +107,7 @@ namespace Game
                     return false;
                 }
                 return true;
-            },
-            readyUpCancellationTokenSource.Token);
+            });
             Task<bool> defendingPlayerReadyupTask = Task.Run(async () =>
             {
                 Message? readyUpMessage = await getMessage(this.defendingPlayer);
@@ -114,18 +118,11 @@ namespace Game
                     return false;
                 }
                 return true;
-            },
-            readyUpCancellationTokenSource.Token);
+            });
 
             // WAIT FOR PLAYERS TO READY UP.
             bool firstPlayerReadiedUp =  await await Task.WhenAny(new List<Task<bool>> { attackingPlayerReadyUpTask, defendingPlayerReadyupTask });
             if (!firstPlayerReadiedUp)
-            {
-                readyUpCancellationTokenSource.Cancel();
-            }
-            List<bool> readyUpResults = (await Task.WhenAll(attackingPlayerReadyUpTask, defendingPlayerReadyupTask)).ToList();
-            bool playersReadiedUp = readyUpResults.All((result) => { return result; });
-            if (!playersReadiedUp)
             {
                 // Let the remaining connected player know that the other player disconnected.
                 bool playerRemains = Players.Any();
@@ -137,6 +134,11 @@ namespace Game
                     };
                     await sendMessage(playerDisconnectedMessage, Players[0]);
                 }
+            }
+            List<bool> readyUpResults = (await Task.WhenAll(attackingPlayerReadyUpTask, defendingPlayerReadyupTask)).ToList();
+            bool playersReadiedUp = readyUpResults.All((result) => { return result; });
+            if (!playersReadiedUp)
+            {
                 return;
             }
 
@@ -201,7 +203,7 @@ namespace Game
                 }
 
                 // Check if the phrase is valid.
-                if (!phraseIsValid(attackResponse!.phrase))
+                if (string.IsNullOrWhiteSpace(attackResponse!.phrase))
                 {
                     // Skip the attackers turn.
                     this.swapPlayers();
@@ -340,27 +342,9 @@ namespace Game
         }
 
         /// <summary>
-        /// Checks if the provided phrase is valid.
-        /// </summary>
-        /// <param name="phrase">The phrase to check.</param>
-        /// <returns>True if the phrase is valid; false otherwise.</returns>
-        private bool phraseIsValid(string? phrase)
-        {
-            // Check if there is a message.
-            if (string.IsNullOrWhiteSpace(phrase))
-            {
-                return false;
-            }
-
-            // Check if all the words are valid.
-            return true;
-        }
-
-        /// <summary>
         /// Recieves a message from the specified player.
         /// </summary>
         /// <param name="player">The player to send the message to.</param>
-        /// <param name="timeoutInSeconds">The time to wait to receive the message.</param>
         /// <returns>The message from the player; null otherwise.</returns>
         private async Task<Message?> getMessage(Player player)
         {

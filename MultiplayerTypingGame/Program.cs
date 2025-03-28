@@ -68,7 +68,6 @@ app.Use(async (context, next) =>
             string? roomName = context.Request.Query["roomName"];
             if (roomName == null)
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 return;
             }
 
@@ -82,7 +81,6 @@ app.Use(async (context, next) =>
             bool roomJoinedSuccessfully = room != null;
             if (!roomJoinedSuccessfully)
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 return;
             }
 
