@@ -5,7 +5,7 @@ export class ReadyUpPrompt extends HTMLElement
     #readyUpButton = null;
 
     // PRIVATE MEMBERS.
-    #readyUpPromiseResolver = null;
+    #readyUpPromiseResolver = () => {};
 
     // CONSTRUCTOR.
     constructor()

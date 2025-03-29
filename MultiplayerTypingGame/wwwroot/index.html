@@ -11,24 +11,36 @@
     {
       table-layout: fixed;
       width: 50%;
-      border-collapse: collapse;
+      height: 70vh;
+      border: 3px solid black;
+      border-radius: 2%;
+      border-spacing: 0px;
 
-      thead th
+      thead
       {
-        text-align: center;
-        border: 3px solid black;
+        tr
+        {
+          th
+          {
+            text-align: center;
+            border-bottom: 3px solid black;
+          }
+        }
       }
 
       tbody
       {
-        tr:nth-child(even)
+        tr
         {
-          background-color: lightgrey;
-        }
-
-        td
-        {
-          text-align: center;
+          &:nth-child(even)
+          {
+            background-color: lightgrey;
+          }
+          
+          td
+          {
+            text-align: center;
+          }
         }
       }
     }
@@ -88,32 +100,43 @@
     {
       #RoomTable
       {
-        table-layout: fixed;
         width: 75%;
       }
     }
 </style>
 
 <body onload="onLoad()">
-    <div id="MainMenu" style="display: flex; flex-direction: column; align-items: center; row-gap: 30px;">
-        <table id="RoomTable">
-          <thead>
-            <tr>
-              <th id="RoomNameColumn" scope="col">Room Key</th>
-              <th id="PlayerCountColumn" scope="col">Players</th>
+  <div id="MainMenu" style="display: flex; flex-direction: column; align-items: center;">
+      <h1 style="margin: 8px;">Monkey Typers</h1>
+      <table id="RoomTable">
+        <thead>
+          <tr>
+            <th id="RoomNameColumn" scope="col">Room Name</th>
+            <th id="PlayerCountColumn" scope="col">Players</th>
+          </tr>
+        </thead>
+        <tbody style="height: min-content;"></tbody>
+        <tbody style="height: 100%;">
+            <tr style="height: 100%;">
+              <th scope="row" colspan="2" style="height: 100%;">
+                <span id="NoRoomsOpenMessage" style="display: none;">No rooms open</span>
+              </th>
             </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
-        <span id="NoRoomsOpenMessage" style="display: none;">No rooms open</span>
-        <span>Room Name: <input id="CreateRoomTextbox" type="text"></input><button id="CreateRoomButton">Create Room</button></span>
-    </div>
-    <span id="RoomNameSpan">Room Name: <span style="user-select: all;" id="RoomNameValueSpan"></span></span>
-    <ready-up-prompt id="ReadyUpPrompt"></ready-up-prompt>
-    <span id="WaitingForOpponentMessageSpan">Waiting for oponent to join.</span>
-    <span id="GameResultSpan"></span>
-    <game-display id="GameDisplay" style="height: 100%; width: 100%; position: absolute; display: none;"></game-display>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row" colspan="2" style="border-top: 3px solid black; padding: 5px;">
+              <span>Room Name: <input id="CreateRoomTextbox" type="text"></input><button id="CreateRoomButton">Create Room</button></span>
+            </th>
+          </tr>
+        </tfoot>
+      </table>
+  </div>
+  <span id="RoomNameSpan">Room Name: <span style="user-select: all;" id="RoomNameValueSpan"></span></span>
+  <ready-up-prompt id="ReadyUpPrompt"></ready-up-prompt>
+  <span id="WaitingForOpponentMessageSpan">Waiting for oponent to join.</span>
+  <span id="GameResultSpan"></span>
+  <game-display id="GameDisplay" style="height: 100%; width: 100%; position: absolute; display: none;"></game-display>
 </body>
 
 <script type="module" src="javascript/Controls/GameDisplay/GameDisplay.js"></script>

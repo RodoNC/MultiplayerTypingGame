@@ -2,18 +2,49 @@ let socket = null;
 // ON LOAD FUNCTION.    
 onload = async () =>
 {
+    // POPULATE THE ROOM TABLE.
+    populateRoomTable();
+
+    // HANDLE THE USER REFRESHING THE TABLE.
+
+    // HANDLE THE USER CREATING A ROOM.
+    const createRoomButton =  document.getElementById("CreateRoomButton");
+    createRoomButton.addEventListener("click", () =>
+    {
+        const createRoomUrl = new URL("/createRoom", window.location.href);
+        socket = new WebSocket(createRoomUrl.href);
+        socket.onclose = () =>
+        {
+            console.log("websocket closed.");
+        };
+        startGame(socket);
+    });
+}
+
+populateRoomTable = async () =>
+{
     // RETRIEVE THE ROOMS.
     const getRoomsUrl = new URL("/getRooms", window.location.href);
     let response = await fetch(
         getRoomsUrl.href, 
         {
-        headers: {'Accept': 'application/json'}
+            headers: {'Accept': 'application/json'}
         });
-    let roomsJson = await response.json();
-    let rooms = roomsJson;
-    
+        let roomsJson = await response.json();
+        let rooms = roomsJson;
+        
+    // CHECK IF THERE ARE ANY ROOMS.
+    const anyRooms = rooms !== null && rooms.length !== 0
+    if (!anyRooms)
+    {
+        //document.getElementById("NoRoomsOpenMessage").innerText = "";
+        document.getElementById("NoRoomsOpenMessage").style.display = "block";
+        return;
+    }
+
     // ADD THE ROOMS TO THE TABLE.
     const roomTableBody = document.getElementById("RoomTable").getElementsByTagName('tbody')[0];
+    roomTableBody.innerHTML = "";
     rooms.forEach((room) => {
         // CREATE THE ROW WITH THE ROOM DETAILS.
         const roomRow = roomTableBody.insertRow(-1);
@@ -42,25 +73,6 @@ onload = async () =>
             };
             startGame(socket);
         });
-    });
-
-    // Show a message if there are no rooms.
-    if (rooms == null || rooms.length === 0)
-    {
-        document.getElementById("NoRoomsOpenMessage").style.display = "block";
-    }
-
-    // HANDLE THE USER CREATING A ROOM.
-    const createRoomButton =  document.getElementById("CreateRoomButton");
-    createRoomButton.addEventListener("click", () =>
-    {
-        const createRoomUrl = new URL("/createRoom", window.location.href);
-        socket = new WebSocket(createRoomUrl.href);
-        socket.onclose = () =>
-        {
-            console.log("websocket closed.");
-        };
-        startGame(socket);
     });
 }
 
