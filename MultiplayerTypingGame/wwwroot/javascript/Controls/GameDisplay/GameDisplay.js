@@ -1,11 +1,13 @@
 import { AttackControl } from "./AttackControl.js";
 import { DefenseControl } from "./DefenseControl.js";
+import { DefenseViewingControl } from "./DefenseViewingControl.js";
 
 export class GameDisplay extends HTMLElement
 {
     // ELEMENTS.
     #attackControl = null;
     #defenseControl = null;
+    #defenseViewingControl = null;
     #healthSpan = null;
     
     // CONSTRUCTOR.
@@ -30,10 +32,12 @@ export class GameDisplay extends HTMLElement
 <div id="Controls">
     <attack-control id="AttackControl" style="display: none;"></attack-control>
     <defense-control id="DefenseControl" style="display: none;"></defense-control>
+    <defense-viewing-control id="DefenseViewingControl" style="display: none;"></defense-viewing-control>
 </div>
         `;
         this.#attackControl = shadowRoot.getElementById("AttackControl");
         this.#defenseControl = shadowRoot.getElementById("DefenseControl");
+        this.#defenseViewingControl = shadowRoot.getElementById("DefenseViewingControl");
         this.#healthSpan = shadowRoot.getElementById("HealthSpan");
 
         // SET THE STYLE.
@@ -108,20 +112,33 @@ export class GameDisplay extends HTMLElement
     async Attack(socket)
     {
         this.#defenseControl.Close();
-        return await this.#attackControl.Open(socket);
+        this.#defenseViewingControl.Close();
+        const attackResponse = await this.#attackControl.Open(socket);
+        if (attackResponse.phrase != null && attackResponse.phrase != "")
+        {
+            this.#defenseViewingControl.Open(attackResponse.phrase);
+        }
+        return attackResponse;
     }
     
     // Display the pending phrase to the defender.
     DisplayPendingPhrase(phrase)
     {
+        this.#defenseViewingControl.Close();
         this.#defenseControl.Open();
         this.#defenseControl.DisplayPendingPhrase(phrase);
     }
 
-    // Allow the user to defend.
-    async Defend(phrase)
+    // Display the pending defense to the attacking player.
+    DisplayPendingDefense(pendingDefenseWord)
     {
-        return await this.#defenseControl.Defend(phrase);
+        this.#defenseViewingControl.DisplayPendingDefense(pendingDefenseWord);
+    }
+
+    // Allow the user to defend.
+    async Defend(phrase, socket)
+    {
+        return await this.#defenseControl.Defend(phrase, socket);
     }
 
     ShowResult(result)

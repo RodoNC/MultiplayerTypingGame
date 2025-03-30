@@ -21,6 +21,7 @@ namespace Game
             opponentDisconnected,
             promptAttack,
             pendingPhrase,
+            pendingDefense,
             attackResponse,
             promptDefense,
             defenseResponse,

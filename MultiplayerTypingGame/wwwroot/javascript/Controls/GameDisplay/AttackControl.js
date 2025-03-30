@@ -162,6 +162,7 @@ export class AttackControl extends HTMLElement
                 const typeTimeInSeconds = (typingEndDateTime - this.#typingStartDateTime) / 1000;
                 this.#attackPromiseResolver(
                     {
+                        type: "attackResponse",
                         phrase: this.#phraseTextbox.value.trim(),
                         time: typeTimeInSeconds
                     });

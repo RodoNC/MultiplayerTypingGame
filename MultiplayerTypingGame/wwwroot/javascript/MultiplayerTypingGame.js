@@ -143,9 +143,14 @@ startGame = async (socket) =>
                 gameDisplay.DisplayPendingPhrase(message.phrase);
                 break;  
             }
+            case "pendingDefense":
+            {
+                gameDisplay.DisplayPendingDefense(message.phrase);
+                break;
+            }
             case "promptDefense":
             {
-                gameDisplay.Defend(message.phrase).then((response) =>
+                gameDisplay.Defend(message.phrase, socket).then((response) =>
                 {
                     socket.send(JSON.stringify(response));
                 });

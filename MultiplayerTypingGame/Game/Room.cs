@@ -161,7 +161,7 @@ namespace Game
 
                 // GET PENDING PHRASE TO DISPLAY TO THE DEFENDER.
                 Message? pendingPhrase = await getMessage(this.attackingPlayer);
-                bool pendingPhraseRetrieved = pendingPhrase != null;
+                bool pendingPhraseRetrieved = pendingPhrase != null && pendingPhrase.type == Message.Type.pendingPhrase;
                 if (!pendingPhraseRetrieved)
                 {
                     // Either an error has occured, or the user has disconnected.
@@ -193,7 +193,7 @@ namespace Game
 
                 // GET COMPLETE PHRASE AND TIME FROM USER.
                 Message? attackResponse = pendingPhrase;
-                bool attackResponseRetrieved = attackResponse != null;
+                bool attackResponseRetrieved = attackResponse != null && attackResponse.type == Message.Type.attackResponse; 
                 if (!attackResponseRetrieved)
                 {
                     // Either an error has occured, or the user has disconnected.
@@ -218,9 +218,41 @@ namespace Game
                 };
                 await sendMessage(defenseMessage, this.defendingPlayer);
                 
+                // GET PENDING DEFENSE TO DISPLAY TO THE ATTACKER.
+                Message? pendingDefense = await getMessage(this.defendingPlayer);
+                bool pendingDefenseRetrieved = pendingDefense != null && pendingDefense.type == Message.Type.pendingDefense;
+                if (!pendingDefenseRetrieved)
+                {
+                    // Either an error has occured, or the user has disconnected.
+                    // Remove the player from the room and end the game.
+                    Players.Remove(this.defendingPlayer);
+                    break;
+                }
+                while (pendingDefense!.type == Message.Type.pendingDefense)
+                {
+                    // Send the pending message to the attacker.
+                    var pendingDefenseMessage = new Message
+                    {
+                        type = Message.Type.pendingDefense,
+                        phrase = pendingDefense!.phrase,
+                    };
+                    await sendMessage(pendingDefenseMessage, attackingPlayer);
+
+                    // Get the pending defense from the defender.
+                    pendingDefense = await getMessage(this.defendingPlayer);
+                    pendingDefenseRetrieved = pendingDefense != null;
+                    if (!pendingDefenseRetrieved)
+                    {
+                        // Either an error has occured, or the user has disconnected.
+                        // Remove the player from the room and end the game.
+                        Players.Remove(this.defendingPlayer);
+                        break;
+                    }
+                }
+
                 // GET THE TIME TO TYPE THE PHRASE.
-                Message? defenseResponse = await getMessage(this.defendingPlayer);
-                bool defenseResponseRetrieved = defenseResponse != null;
+                Message? defenseResponse = pendingDefense;
+                bool defenseResponseRetrieved = defenseResponse != null && defenseResponse.type == Message.Type.defenseResponse;
                 if (!defenseResponseRetrieved)
                 {
                     // Either an error has occured, or the user has disconnected.

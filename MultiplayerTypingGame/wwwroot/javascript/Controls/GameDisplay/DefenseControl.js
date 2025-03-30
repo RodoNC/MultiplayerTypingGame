@@ -8,6 +8,7 @@ export class DefenseControl extends HTMLElement
     #defenseTimer = null;
 
     // PRIVATE MEMBERS.
+    #socket = null;
     #gracePeriodInSeconds = 5;
     #timeToTypePhraseInSeconds = 10;
     #typingStartDateTime = null;
@@ -83,8 +84,11 @@ export class DefenseControl extends HTMLElement
     }
 
     // Allow the user to defend.
-    async Defend(phrase)
+    async Defend(phrase, socket)
     {
+        // SET THE SOCKET.
+        this.#socket = socket;
+
         // HANDLE THE USER TYPING.
         this.#phraseTextbox.addEventListener("input", () =>
         {
@@ -114,6 +118,8 @@ export class DefenseControl extends HTMLElement
                 {
                     // End the typing timer.
                     this.#defenseTimer.EndTimer();
+
+                    // Close the controller.
                 }
                 else
                 {
@@ -122,6 +128,16 @@ export class DefenseControl extends HTMLElement
             }
         });
 
+        // SEND THE PENDING DEFENSE TO THE BACKEND.
+        this.#phraseTextbox.addEventListener("keyup", () =>
+        {
+            this.#socket.send(JSON.stringify(
+            {
+                type: "pendingDefense",
+                phrase: this.#phraseTextbox.value.trim()
+            }));
+        });
+                
         // ADD THE WORDS TO THE TYPE DISPLAY.
         this.#phraseDisplaySpan.innerHTML = "";
         const phraseChunks = phrase.split(" ");
@@ -191,7 +207,11 @@ export class DefenseControl extends HTMLElement
             {
                 const typingEndDateTime = new Date();
                 const typeTimeInSeconds = (typingEndDateTime - this.#typingStartDateTime) / 1000;
-                this.#defensePromiseResolver({ time: typeTimeInSeconds });
+                this.#defensePromiseResolver(
+                {
+                    type: "defenseResponse",
+                    time: typeTimeInSeconds
+                });
                 this.Close();
             });
         }
