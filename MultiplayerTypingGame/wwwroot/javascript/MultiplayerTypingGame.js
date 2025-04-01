@@ -81,9 +81,18 @@ startGame = async (socket) =>
     // HIDE THE MAIN MENU.
     const mainMenu = document.getElementById("MainMenu");
     mainMenu.style.display = "none";
+
+    // CREATE THE PROMISE TO BE RESOLVED WHEN THE GAME ENDS.
+    let gameEndPromiseResolver ;
+    const gameEndPromise = (new Promise((resolve) =>
+    {
+        gameEndPromiseResolver = resolve;
+    })).then(() =>
+    {
+        window.location.reload();
+    });
     
     // HANDLE THE SOCKET DISCONNECTING.
-    let gameEndPromiseResolver;
     socket.onclose = () => { gameEndPromiseResolver("The connection was closed by the server."); };
     socket.onerror = () => { gameEndPromiseResolver("The connection was closed due to a connection error."); };
     
@@ -187,12 +196,5 @@ startGame = async (socket) =>
         }
     }
 
-    // CREATE THE PROMISE TO BE RESOLVED WHEN THE GAME ENDS.
-    return (new Promise((resolve) =>
-    {
-        gameEndPromiseResolver = resolve;
-    })).then(() =>
-    {
-        window.location.reload();
-    });
+    return gameEndPromise;
 }

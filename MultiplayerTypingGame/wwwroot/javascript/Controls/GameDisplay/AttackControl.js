@@ -31,7 +31,7 @@ export class AttackControl extends HTMLElement
 <div id="Container">
     <span style="font-size: 20px;">Attack! Type in a phrase.</span>
     <div>
-        <game-timer id="GameTimer"></game-timer><input id="PhraseTextbox" type="text"></input>
+        <game-timer id="GameTimer"></game-timer><input id="PhraseTextbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></input>
     </div>
 </div>
         `;
@@ -61,7 +61,15 @@ export class AttackControl extends HTMLElement
         // HANDLE THE USER STARTING TO TYPE.
         this.#phraseTextbox.addEventListener("input", () =>
         {
+            // Make input lowecase.
             this.#phraseTextbox.value = this.#phraseTextbox.value.toLowerCase();
+
+            // Send the pending message to the backend.
+            this.#socket.send(JSON.stringify(
+            {
+                type: "pendingPhrase",
+                phrase: this.#phraseTextbox.value.trim()
+            }));
             const startedTyping = this.#typingStartDateTime != null;
             if (!startedTyping)
             {
@@ -91,16 +99,6 @@ export class AttackControl extends HTMLElement
                 event.preventDefault();
             }
         });
-        
-        // SEND THE PENDING MESSAGE TO THE BACKEND.
-        this.#phraseTextbox.addEventListener("keyup", (event) =>
-        {
-            this.#socket.send(JSON.stringify(
-            {
-                type: "pendingPhrase",
-                phrase: this.#phraseTextbox.value.trim()
-            }));
-        });
     }
     
     // PUBLIC FUNCTIONS.
@@ -113,11 +111,19 @@ export class AttackControl extends HTMLElement
         // SHOW THE CONTROL.
         this.style.display = "block";
 
+        // SEND AN EMPTY PENDING MESSAGE TO THE BACKEND.
+        // This is to let defender know that you are about to start typing.
+        this.#socket.send(JSON.stringify(
+            {
+                type: "pendingPhrase",
+                phrase: this.#phraseTextbox.value.trim()
+            }));
+
         // START THE GRACE PERIOD TIMER.
         this.#attackTimer.StartTimer(this.#gracePeriodInSeconds).then(() =>
-            {
-                this.#startTypingTimer();
-            });
+        {
+            this.#startTypingTimer();
+        });
             
         // FOCUS ON THE TEXTBOX.
         this.#phraseTextbox.focus();
@@ -125,9 +131,9 @@ export class AttackControl extends HTMLElement
         // CREATE A PROMISE TO BE RESOLVED WHEN THE TIME HAS ENDED
         // OR A PHRASE WAS SUBMITTED.
         const attackPromise = new Promise((resolve) =>
-            {
-                this.#attackPromiseResolver = resolve;
-            });
+        {
+            this.#attackPromiseResolver = resolve;
+        });
         return attackPromise;
     }
 

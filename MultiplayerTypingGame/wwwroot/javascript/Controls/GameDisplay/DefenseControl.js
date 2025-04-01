@@ -34,7 +34,7 @@ export class DefenseControl extends HTMLElement
     <span style="font-size: 20px;">Defend! Type in the phrase.</span>
     <span id="PhraseDisplaySpan"></span>
     <div>
-        <game-timer id="GameTimer"></game-timer><input id="PhraseTextbox" type="text"></input>
+        <game-timer id="GameTimer"></game-timer><input id="PhraseTextbox" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></input>
     </div>
 </div>
         `;
@@ -66,34 +66,19 @@ export class DefenseControl extends HTMLElement
         }
         `;
         shadowRoot.appendChild(style);
-    }
-
-    // PUBLIC FUNCTIONS.
-    // Opens the control.
-    Open()
-    {
-        // SHOW THE CONTROL.
-        this.style.display = "block";
-    }
-
-    // Display the pending phrase.
-    DisplayPendingPhrase(phrase)
-    {
-        this.#phraseTextbox.disabled = true;
-        this.#phraseDisplaySpan.innerText = `Attacker is typing: ${phrase}`;
-    }
-
-    // Allow the user to defend.
-    async Defend(phrase, socket)
-    {
-        // SET THE SOCKET.
-        this.#socket = socket;
 
         // HANDLE THE USER TYPING.
         this.#phraseTextbox.addEventListener("input", () =>
         {
             // Make input lowecase.
             this.#phraseTextbox.value = this.#phraseTextbox.value.toLowerCase();
+
+            // Send the pending defense to the backend.
+            this.#socket.send(JSON.stringify(
+            {
+                type: "pendingDefense",
+                phrase: this.#phraseTextbox.value
+            }));
 
             // End the grace period.
             const userStartedTyping = this.#typingStartDateTime != null;
@@ -118,8 +103,6 @@ export class DefenseControl extends HTMLElement
                 {
                     // End the typing timer.
                     this.#defenseTimer.EndTimer();
-
-                    // Close the controller.
                 }
                 else
                 {
@@ -127,16 +110,28 @@ export class DefenseControl extends HTMLElement
                 }
             }
         });
+    }
 
-        // SEND THE PENDING DEFENSE TO THE BACKEND.
-        this.#phraseTextbox.addEventListener("keyup", () =>
-        {
-            this.#socket.send(JSON.stringify(
-            {
-                type: "pendingDefense",
-                phrase: this.#phraseTextbox.value.trim()
-            }));
-        });
+    // PUBLIC FUNCTIONS.
+    // Opens the control.
+    Open()
+    {
+        // SHOW THE CONTROL.
+        this.style.display = "block";
+    }
+
+    // Display the pending phrase.
+    DisplayPendingPhrase(phrase)
+    {
+        this.#phraseTextbox.disabled = true;
+        this.#phraseDisplaySpan.innerText = `Attacker is typing: ${phrase}`;
+    }
+
+    // Allow the user to defend.
+    async Defend(phrase, socket)
+    {
+        // SET THE SOCKET.
+        this.#socket = socket;
                 
         // ADD THE WORDS TO THE TYPE DISPLAY.
         this.#phraseDisplaySpan.innerHTML = "";

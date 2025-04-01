@@ -220,7 +220,7 @@ namespace Game
                 
                 // GET PENDING DEFENSE TO DISPLAY TO THE ATTACKER.
                 Message? pendingDefense = await getMessage(this.defendingPlayer);
-                bool pendingDefenseRetrieved = pendingDefense != null && pendingDefense.type == Message.Type.pendingDefense;
+                bool pendingDefenseRetrieved = pendingDefense != null;
                 if (!pendingDefenseRetrieved)
                 {
                     // Either an error has occured, or the user has disconnected.
