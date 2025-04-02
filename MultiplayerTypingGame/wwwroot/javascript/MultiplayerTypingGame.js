@@ -5,8 +5,6 @@ onload = async () =>
     // POPULATE THE ROOM TABLE.
     populateRoomTable();
 
-    // HANDLE THE USER REFRESHING THE TABLE.
-
     // HANDLE THE USER CREATING A ROOM.
     const createRoomButton =  document.getElementById("CreateRoomButton");
     createRoomButton.addEventListener("click", () =>
