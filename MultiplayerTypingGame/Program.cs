@@ -29,13 +29,19 @@ app.Use(async (context, next) =>
         if (context.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+            string? roomName = context.Request.Query["roomName"];
+            if (roomName == null)
+            {
+                return;
+            }
+
             Player player = new Player
             {
                 WebSocketConnection = webSocket,
                 Health = 100,
                 Name = "Billy"
             };
-            Room? room = CreateRoom(player);
+            Room? room = CreateRoom(player, roomName);
             bool roomCreatedSuccefully = room != null;
             if (!roomCreatedSuccefully)
             {
@@ -148,10 +154,24 @@ Room? JoinRoom(Player player, string roomName)
 }
 
 // Creates a room.
-Room? CreateRoom(Player player)
+Room? CreateRoom(Player player, string roomName)
 {
+    // Assign a random roomname if not provided.
+    if (string.IsNullOrWhiteSpace(roomName))
+    {
+        roomName = "default name";
+    }
+
+    // Make sure the room name is unique.
+    int duplicateRoomNameCount = 0;
+    string originalRoomName = roomName;
+    while (roomsByName.ContainsKey(roomName))
+    {
+        duplicateRoomNameCount += 1;
+        roomName = $"{originalRoomName} ({duplicateRoomNameCount})";
+    }
+    
     // Create a room.
-    string roomName = Guid.NewGuid().ToString().Substring(0, 4);
     Room room = new Room(player, roomName);
 
     // Add the room to the list of rooms.

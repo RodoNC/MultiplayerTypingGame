@@ -7,9 +7,11 @@ onload = async () =>
 
     // HANDLE THE USER CREATING A ROOM.
     const createRoomButton =  document.getElementById("CreateRoomButton");
+    const createRoomTextbox =  document.getElementById("CreateRoomTextbox");
     createRoomButton.addEventListener("click", () =>
     {
         const createRoomUrl = new URL("/createRoom", window.location.href);
+        createRoomUrl.searchParams.append("roomName", createRoomTextbox.value.trim());
         socket = new WebSocket(createRoomUrl.href);
         socket.onclose = () =>
         {
